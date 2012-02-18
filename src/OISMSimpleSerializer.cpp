@@ -1,3 +1,6 @@
+// licensed under the zlib license
+// copyright (c) 2012 sebastien raymond
+
 #include "OISMSimpleSerializer.h"
 
 #include <algorithm>

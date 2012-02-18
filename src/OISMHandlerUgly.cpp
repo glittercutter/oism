@@ -1,6 +1,9 @@
-// Accessing protected member OIS::Keyboard::mModifiers
+// Licensed under the zlib License
+// Copyright (C) 2012 Sebastien Raymond
 
+// Accessing protected member OIS::Keyboard::mModifiers
 #define protected public
+
 #include "OISMHandler.h"
 #include <OIS/OISKeyboard.h>
 

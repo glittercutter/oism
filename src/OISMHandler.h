@@ -1,3 +1,6 @@
+// Licensed under the zlib License
+// Copyright (C) 2012 Sebastien Raymond
+
 #pragma once 
 
 #include <OIS/OISEvents.h>
