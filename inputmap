@@ -1,2 +1,3 @@
 quit kb escape
-quit ms middle
+quit ms left
+move js 0 button 0

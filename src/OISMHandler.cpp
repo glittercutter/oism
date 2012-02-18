@@ -245,9 +245,11 @@ Handler::~Handler()
 
 void Handler::update()
 {
-    // Reset mouse value
-    SET_BINDING_VALUE(mMouseEvents, MouseEvent::CPNT_AXIS_X, 0);
-    SET_BINDING_VALUE(mMouseEvents, MouseEvent::CPNT_AXIS_Y, 0);
+    // Reset mouse values
+    SET_BINDING_VALUE(mMouseEvents, MouseEvent::create(MouseEvent::CPNT_AXIS_X), 0);
+    SET_BINDING_VALUE(mMouseEvents, MouseEvent::create(MouseEvent::CPNT_AXIS_X, true), 0);
+    SET_BINDING_VALUE(mMouseEvents, MouseEvent::create(MouseEvent::CPNT_AXIS_Y), 0);
+    SET_BINDING_VALUE(mMouseEvents, MouseEvent::create(MouseEvent::CPNT_AXIS_Y, true), 0);
 
     mMouse->capture();
     mKeyboard->capture();
@@ -265,21 +267,20 @@ void Handler::setExclusive(bool state/* = true*/)
 void Handler::createOIS(bool exclusive/* = true*/)
 {
     OIS::ParamList pl;
-    std::stringstream ss; ss << mHWnd;
-    pl.insert(OIS::ParamList::value_type("WINDOW", ss.str()));
+    pl.insert({"WINDOW", std::to_string(mHWnd)});
     
     if (!exclusive)
     {
 #if defined OIS_WIN32_PLATFORM
-        pl.insert(std::make_pair(std::string("w32_mouse"), std::string("DISCL_FOREGROUND")));
-        pl.insert(std::make_pair(std::string("w32_mouse"), std::string("DISCL_NONEXCLUSIVE")));
-        pl.insert(std::make_pair(std::string("w32_keyboard"), std::string("DISCL_FOREGROUND")));
-        pl.insert(std::make_pair(std::string("w32_keyboard"), std::string("DISCL_NONEXCLUSIVE")));
+        pl.insert({"w32_mouse",    "DISCL_FOREGROUND"});
+        pl.insert({"w32_mouse",    "DISCL_NONEXCLUSIVE"});
+        pl.insert({"w32_keyboard", "DISCL_FOREGROUND"});
+        pl.insert({"w32_keyboard", "DISCL_NONEXCLUSIVE"});
 #elif defined OIS_LINUX_PLATFORM
-        pl.insert(std::make_pair(std::string("x11_mouse_grab"), std::string("false")));
-        pl.insert(std::make_pair(std::string("x11_mouse_hide"), std::string("false")));
-        pl.insert(std::make_pair(std::string("x11_keyboard_grab"), std::string("false")));
-        pl.insert(std::make_pair(std::string("XAutoRepeatOn"), std::string("true")));
+        pl.insert({"x11_mouse_grab",    "false"});
+        pl.insert({"x11_mouse_hide",    "false"});
+        pl.insert({"x11_keyboard_grab", "false"});
+        pl.insert({"XAutoRepeatOn",     "true"});
 #endif
     }
 
@@ -333,10 +334,10 @@ void Handler::destroyOIS()
     mOIS->destroyInputObject(mMouse);
     mOIS->destroyInputObject(mKeyboard);
 
-    for (auto it = mJoySticks.begin(); it != mJoySticks.end(); it++)
+    for (auto& pair : mJoySticks)
     {
-        mOIS->destroyInputObject(it->first); // JoyStick
-        delete it->second; // JoyStickListener
+        mOIS->destroyInputObject(pair.first); // JoyStick
+        delete pair.second; // JoyStickListener
     }
 
     OIS::InputManager::destroyInputSystem(mOIS);
@@ -413,7 +414,7 @@ void Handler::registerJoyStickListener(std::weak_ptr<OIS::JoyStickListener> lnr,
     if (id >= 0 && mJoySticks.size() > (unsigned)id)
         mJoySticks[id].second->addListener(lnr);
     else
-        std::cout << "===WARNING=== "<<__FUNCTION__<<" Wrong joystick ID " << std::endl;
+        wprintln(__FUNCTION__<<" Invalid joystick number");
 }
 
 
@@ -433,8 +434,6 @@ float Handler::getJoyStickValue(InputEvent::Type evt) const
     if (joystickNum >= mJoySticks.size()) return value;
     OIS::JoyStick* js = mJoySticks[joystickNum].first;
     const OIS::JoyStickState& state = js->getJoyStickState();
-
-lprintln(evt<<" "<<joystickNum<<" "<<component<<" "<<componentId);
 
     if (componentId >= (unsigned)js->getNumberOfComponents((OIS::ComponentType)component) &&
         (component != OIS::ComponentType::OIS_POV ||
