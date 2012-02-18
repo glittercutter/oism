@@ -19,7 +19,7 @@
 #include <string>
 #include <unordered_map>
 
-// MOTE: Bit shifting assume at least 32bits, little-endian machine
+// NOTE: Bit shifting assume at least 32bits, little-endian machine
 static_assert(sizeof(unsigned) >= 4, "unsigned type need to be at least 4 bytes wide");
 
 namespace oism
