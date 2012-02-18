@@ -1,11 +1,12 @@
-// licensed under the zlib license
-// copyright (c) 2012 sebastien raymond
+// Licensed under the zlib License
+// Copyright (C) 2012 Sebastien Raymond
 
 #include "OISMSimpleSerializer.h"
 
+#include "OISMLog.h"
+
 #include <algorithm>
 #include <cctype>
-
 
 using namespace oism;
 

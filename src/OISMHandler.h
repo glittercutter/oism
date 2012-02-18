@@ -19,12 +19,8 @@
 #include <string>
 #include <unordered_map>
 
-#include "OISMLog.h"
-
-
 // MOTE: Bit shifting assume at least 32bits, little-endian machine
 static_assert(sizeof(unsigned) >= 4, "unsigned type need to be at least 4 bytes wide");
-
 
 namespace oism
 {
@@ -429,18 +425,18 @@ protected:
     void destroyOIS();
 
     // Implement OIS::MouseListener
-	bool mouseMoved(const OIS::MouseEvent& evt);
-	bool mousePressed(const OIS::MouseEvent& evt, OIS::MouseButtonID id);
-	// Implement OIS::KeyListener
+    bool mouseMoved(const OIS::MouseEvent& evt);
+    bool mousePressed(const OIS::MouseEvent& evt, OIS::MouseButtonID id);
+    // Implement OIS::KeyListener
     bool mouseReleased(const OIS::MouseEvent& evt, OIS::MouseButtonID id);
-	bool keyPressed(const OIS::KeyEvent& evt);
-	bool keyReleased(const OIS::KeyEvent& evt);
+    bool keyPressed(const OIS::KeyEvent& evt);
+    bool keyReleased(const OIS::KeyEvent& evt);
 
     // Callback from Input::JoyStickListener
-	void buttonPressed(unsigned button, JoyStickListener* lnr);
-	void buttonReleased(unsigned button, JoyStickListener* lnr);
-	void axisMoved(unsigned axis, float value, JoyStickListener* lnr);
-	void povMoved(unsigned idx, unsigned direction, JoyStickListener* lnr);
+    void buttonPressed(unsigned button, JoyStickListener* lnr);
+    void buttonReleased(unsigned button, JoyStickListener* lnr);
+    void axisMoved(unsigned axis, float value, JoyStickListener* lnr);
+    void povMoved(unsigned idx, unsigned direction, JoyStickListener* lnr);
 
     InputEventBindingListMap mKeyEvents;
     InputEventBindingListMap mMouseEvents;

@@ -2,6 +2,7 @@
 // Copyright (C) 2012 Sebastien Raymond
 
 #include "OISMHandler.h"
+#include "OISMLog.h"
 
 #include <algorithm>
 #include <cmath>
