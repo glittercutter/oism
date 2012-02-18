@@ -456,7 +456,6 @@ void SimpleSerializer::addMouse(Bind* b, FileReader& fr) const
             continue;
         }
 
-        lprintln(it->second);
         b->addMouseEvent(MouseEvent::create(it->second, rev));
     }
 }
