@@ -1,41 +1,38 @@
 cmake_minimum_required (VERSION 2.6.2)
 project (test)
 
-# src
 set (SRC
     src/OISMHandler.cpp
     src/OISMHandlerUgly.cpp
     src/OISMSimpleSerializer.cpp
     src/test/main.cpp
-)
+    )
 
-# flag
-set (CMAKE_CXX_FLAGS_RELEASE -O2)
-set (CMAKE_CXX_FLAGS -O0)
-add_definitions (-std=c++0x -Wall)
+find_path (OIS_INCLUDE_DIRECTORY NAMES OIS.h PATHS /usr/include/OIS OIS)
+find_library (OIS_LIBRARY OIS)
 
+include_directories (
+    ${CMAKE_SOURCE_DIR}/src
+    ${OIS_INCLUDE_DIRECTORY}
+    )
+
+set (LIBS ${LIBS}
+    ${OIS_LIBRARY}
+    )
 
 if (WIN32)
-    set (SYSTEM_LIBS
-        "${SYSTEM_LIBS}
+    set (LIBS ${LIBS}
         winmm
         ole32
         oleaut32
         dinput8
-        dxguid"
-    )
+        dxguid
+        )
+endif()
 
-    if (UNIX)
-        # both Cygwin and Msys need -DNOMINMAX ???
-        add_definitions (-DNOMINMAX)
-    endif (UNIX)
-
-    # boost thread
-    #add_definitions (-D_WIN32_WINNT=0x0501 -DBOOST_THREAD_USE_LIB)
-    #set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} pthreadGCE2.dll")
-endif (WIN32)
+set (CMAKE_CXX_FLAGS_RELEASE -O2)
+set (CMAKE_CXX_FLAGS -O0)
+add_definitions (-std=c++0x -Wall)
 
 add_executable (test ${SRC})
-target_link_libraries (test
-    OIS
-)
+target_link_libraries (test ${LIBS})

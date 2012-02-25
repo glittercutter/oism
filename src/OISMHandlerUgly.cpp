@@ -5,7 +5,7 @@
 #define protected public
 
 #include "OISMHandler.h"
-#include <OIS/OISKeyboard.h>
+#include <OISKeyboard.h>
 
 using namespace oism;
 

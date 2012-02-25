@@ -3,11 +3,11 @@
 
 #pragma once 
 
-#include <OIS/OISEvents.h>
-#include <OIS/OISInputManager.h>
-#include <OIS/OISJoyStick.h>
-#include <OIS/OISKeyboard.h>
-#include <OIS/OISMouse.h>
+#include <OISEvents.h>
+#include <OISInputManager.h>
+#include <OISJoyStick.h>
+#include <OISKeyboard.h>
+#include <OISMouse.h>
 
 #include <array>
 #include <deque>
