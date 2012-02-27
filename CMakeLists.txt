@@ -28,7 +28,11 @@ if (WIN32)
         dinput8
         dxguid
         )
-endif()
+elseif (UNIX)
+    set (LIBS ${LIBS}
+        X11
+        )
+endif ()
 
 set (CMAKE_CXX_FLAGS_RELEASE -O2)
 set (CMAKE_CXX_FLAGS -O0)
