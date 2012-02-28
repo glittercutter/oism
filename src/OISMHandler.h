@@ -350,13 +350,7 @@ private:
 
 struct NamedBindingMap
 {
-    Bind* getBinding(const std::string& name)
-    {
-        auto it = map.find(name);
-        if (it == map.end()) it = map.insert(std::make_pair(name, new Bind())).first;
-        return it->second;
-    }
-
+    Bind* getBinding(const std::string& name, bool assign = false);
     void clear() { map.clear(); }
 
     std::unordered_map<std::string, Bind*> map;
@@ -392,7 +386,8 @@ public:
     float getJoyStickValue(unsigned int) const;
 
     void update();
-    Bind* getBinding(const std::string& name, const DefaultEvent& def = DefaultEvent());
+    Bind::CallbackSharedPtr callback(const std::string& name, const Bind::Callback& cb, unsigned type = Bind::CT_ON_POSITIVE);
+    Bind* getBinding(const std::string& name, bool assign = false);
     void setMouseLimit(int w, int h);
     void setExclusive(bool state = true);
 
@@ -476,11 +471,3 @@ protected:
 
 
 } /* oism */
-
-
-#define OISM_NEW_CALLBACK(_NAME, _TYPE, _CALLBACK) \
-    oism::Handler::getInstance(). \
-        getBinding(_NAME)->addCallback( \
-        oism::Bind::_TYPE, \
-        oism::Bind::CallbackSharedPtr( \
-        new oism::Bind::Callback(_CALLBACK)))

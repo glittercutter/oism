@@ -41,7 +41,7 @@ FileReader::FileReader(const std::string& filename)
 {
     if (!fs.is_open())
     {
-        eprintln("Error opening file: "<<filename);
+        ELOG("Error opening file: "<<filename);
     }
 }
 
@@ -94,7 +94,7 @@ int FileReader::nextNumber(int& num)
     }
     catch (const std::invalid_argument& e)
     {
-        wprintln("File:'"<<filename<<"' Line:"<<lineNum<<" -- Expected a number, what we got:'"<<str<<"'");
+        WLOG("File:'"<<filename<<"' Line:"<<lineNum<<" -- Expected a number, what we got:'"<<str<<"'");
     }
     return 0;
 }
@@ -158,7 +158,7 @@ bool FileReader::parseKeyValuePair(const std::string& key, int& value)
         }
         catch (const std::invalid_argument& e)
         {
-            wprintln("Integer expected");
+            WLOG("Integer expected");
         }
     }
     return 0;
@@ -177,7 +177,7 @@ bool FileReader::parseKeyValuePair(const std::string& key, float& value)
         }
         catch (const std::invalid_argument& e)
         {
-            wprintln("Floating point number expected");
+            WLOG("Floating point number expected");
         }
     }
     return 0;
@@ -394,12 +394,12 @@ void SimpleSerializer::loadBinding(NamedBindingMap& map)
         if (!fr.nextWord(name)) continue;
         if (!fr.nextWord(devName)) continue;
         
-        Bind* b = map.getBinding(name);
+        Bind* b = map.getBinding(name, true);
         
         if (is_in(mKeyboardDeviceNames, devName)) addKey(b, fr);
         else if (is_in(mMouseDeviceNames, devName)) addMouse(b, fr);
         else if (is_in(mJoyStickDeviceNames, devName)) addJoyStick(b, fr);
-        else wprintln("Invalid device name: "<<devName);
+        else WLOG("Invalid device name: "<<devName);
     }
 }
 
@@ -438,7 +438,7 @@ void SimpleSerializer::addKey(Bind* b, FileReader& fr) const
                 continue;
             }
 
-            wprintln("Invalid key name:"<<keyName);
+            WLOG("Invalid key name:"<<keyName);
         }
         b->addKeyEvent(KeyEvent::create(key, mod, rev));
     }
@@ -456,7 +456,7 @@ void SimpleSerializer::addMouse(Bind* b, FileReader& fr) const
         auto it = mMouseComponentNames.find(word);
         if (it == mMouseComponentNames.end())
         {
-            wprintln("Invalid mouse event name: "<<word);
+            WLOG("Invalid mouse event name: "<<word);
             continue;
         }
 
@@ -472,14 +472,14 @@ void SimpleSerializer::addJoyStick(Bind* b, FileReader& fr) const
     int joystickNum;
     if (!fr.nextNumber(joystickNum))
     {
-        wprintln("Invalid joystick number\n");
+        WLOG("Invalid joystick number\n");
         return;
     }
 
     std::string componentName;
     if (!fr.nextWord(componentName)) 
     {
-        wprintln("Invalid joystick event: "<<componentName);
+        WLOG("Invalid joystick event: "<<componentName);
         return;
     }
 
@@ -488,14 +488,14 @@ void SimpleSerializer::addJoyStick(Bind* b, FileReader& fr) const
     auto cpntIt = mJoyStickComponentNames.find(componentName);
     if (cpntIt == mJoyStickComponentNames.end())
     {
-        wprintln("Invalid joystick component: "<<componentName);
+        WLOG("Invalid joystick component: "<<componentName);
         return;
     }
 
     int componentId;
     if (!fr.nextNumber(componentId))
     {
-        wprintln("Invalid joystick component id\n");
+        WLOG("Invalid joystick component id\n");
         return;
     }
 

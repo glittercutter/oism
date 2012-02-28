@@ -196,7 +196,12 @@ int main(int argc, char** argv)
     auto& input = oism::Handler::getInstance();
     input.init<oism::SimpleSerializer>(createWindow(), "../");
 
-    auto quitCb = OISM_NEW_CALLBACK("quit", CT_ON_POSITIVE, [&](){g_run = false;});
+    // Callbacks are disabled when the shared pointer goes out of scope
+    auto cbSharedPointer = input.callback("quit", [&](){g_run = false;});
+    {
+        auto cbOutOfScope = input.callback("disabled", [](){std::cout << "error!" << std::endl;});
+    }
+    auto cbJoystick = input.callback("hello_joystick", [](){std::cout << "joystick" << std::endl;});
 
     while (g_run) { input.update(); }
     

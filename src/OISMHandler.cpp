@@ -21,6 +21,21 @@ using namespace oism;
 }
 
 
+// Display warning if we dont request an assignment and binding is not existing already
+Bind* NamedBindingMap::getBinding(const std::string& name, bool assign/* = false*/)
+{
+    auto it = map.find(name);
+    if (it == map.end())
+    {
+        LOG("New binding '" << name << "'.");
+        if (!assign) WLOG("Binding '" << name << " has no input");
+        it = map.insert(std::make_pair(name, new Bind())).first;
+    }
+    return it->second;
+}
+
+
+
 /*
 =====================
 Bind
@@ -289,11 +304,11 @@ void Handler::createOIS(bool exclusive/* = true*/)
     }
 
     mOIS = OIS::InputManager::createInputSystem(pl);
-    lprintln(mOIS->inputSystemName());
+    LOG(mOIS->inputSystemName());
 
-    lprintln("List of available device:")
+    LOG("List of available device:")
     for (auto& dev : mOIS->listFreeDevices())
-        lprintln("  - "<<convertOISDeviceTypeToString(dev.first)<<" -- "<<dev.second);
+        LOG("  - "<<convertOISDeviceTypeToString(dev.first)<<" -- "<<dev.second);
 
     // Create devices
 
@@ -310,7 +325,7 @@ void Handler::createOIS(bool exclusive/* = true*/)
     }
 
     unsigned numJoystick = mOIS->getNumberOfDevices(OIS::OISJoyStick);
-    if (numJoystick) lprintln("Creating joystick:");
+    if (numJoystick) LOG("Creating joystick:");
 
     for (int i = 0; i < mOIS->getNumberOfDevices(OIS::OISJoyStick); i++)
     {
@@ -322,13 +337,13 @@ void Handler::createOIS(bool exclusive/* = true*/)
         js->setEventCallback(mJoySticks.back().second);
 
         // List specs
-        lprintln("  - Joystick "<<i<<" -- Vendor: "<<js->vendor());
-        lprintln("    - Unknown: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Unknown));
-        lprintln("    - Button: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Button));
-        lprintln("    - Axis: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Axis));
-        lprintln("    - Slider: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Slider));
-        lprintln("    - POV: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_POV));
-        lprintln("    - Movement capture: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Vector3));
+        LOG("  - Joystick "<<i<<" -- Vendor: "<<js->vendor());
+        LOG("    - Unknown: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Unknown));
+        LOG("    - Button: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Button));
+        LOG("    - Axis: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Axis));
+        LOG("    - Slider: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Slider));
+        LOG("    - POV: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_POV));
+        LOG("    - Movement capture: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Vector3));
     }
 }
 
@@ -418,13 +433,19 @@ void Handler::registerJoyStickListener(std::weak_ptr<OIS::JoyStickListener> lnr,
     if (id >= 0 && mJoySticks.size() > (unsigned)id)
         mJoySticks[id].second->addListener(lnr);
     else
-        wprintln(__FUNCTION__<<" Invalid joystick number");
+        WLOG(__FUNCTION__<<" Invalid joystick number");
 }
 
 
-Bind* Handler::getBinding(const std::string& name, const DefaultEvent& def/* = DefaultEvent()*/)
+Bind::CallbackSharedPtr Handler::callback(const std::string& name, const Bind::Callback& cb, unsigned type/* = Bind::CT_ON_POSITIVE*/)
 {
-    return mBindings.getBinding(name);
+    return getBinding(name)->addCallback(type, Bind::CallbackSharedPtr(new Bind::Callback(cb)));   
+}
+
+
+Bind* Handler::getBinding(const std::string& name, bool assign/* = false*/)
+{
+    return mBindings.getBinding(name, assign);
 }
 
 
