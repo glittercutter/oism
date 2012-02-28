@@ -510,7 +510,7 @@ bool Handler::mouseMoved(const OIS::MouseEvent& evt)
         evt.state.Y.rel * mConfig.mouseSensivityAxisY);
 
     // Notify listeners
-	for (auto it = mMouseListeners.begin(); it != mMouseListeners.end(); it++)
+    for (auto it = mMouseListeners.begin(); it != mMouseListeners.end(); it++)
     {
         std::shared_ptr<OIS::MouseListener> lnr = it->lock();
         if (!lnr.get()) it = mMouseListeners.erase(it);
@@ -527,7 +527,7 @@ bool Handler::mousePressed(const OIS::MouseEvent& evt, OIS::MouseButtonID id)
     SET_BINDING_VALUE(mMouseEvents, MouseEvent::create((unsigned)id, true), -1.f);
 
     // Notify listeners
-	for (auto it = mMouseListeners.begin(); it != mMouseListeners.end(); it++)
+    for (auto it = mMouseListeners.begin(); it != mMouseListeners.end(); it++)
     {
         std::shared_ptr<OIS::MouseListener> lnr = it->lock();
         if (!lnr.get()) it = mMouseListeners.erase(it);
@@ -543,7 +543,7 @@ bool Handler::mouseReleased(const OIS::MouseEvent& evt, OIS::MouseButtonID id)
     SET_BINDING_VALUE(mMouseEvents, (unsigned)id, 0.f);
 
     // Notify listeners
-	for (auto it = mMouseListeners.begin(); it != mMouseListeners.end(); it++)
+    for (auto it = mMouseListeners.begin(); it != mMouseListeners.end(); it++)
     {
         std::shared_ptr<OIS::MouseListener> lnr = it->lock();
         if (!lnr.get()) it = mMouseListeners.erase(it);
@@ -563,7 +563,7 @@ bool Handler::keyPressed(const OIS::KeyEvent& evt)
     SET_BINDING_VALUE(mKeyEvents, KeyEvent::create2(evt, mKeyboard, true), -1.f);
 
     // Notify listeners
-	for (auto it = mKeyListeners.begin(); it != mKeyListeners.end(); it++)
+    for (auto it = mKeyListeners.begin(); it != mKeyListeners.end(); it++)
     {
         std::shared_ptr<OIS::KeyListener> lnr = it->lock();
         if (!lnr.get()) it = mKeyListeners.erase(it);
@@ -580,7 +580,7 @@ bool Handler::keyReleased(const OIS::KeyEvent& evt)
     SET_BINDING_VALUE(mKeyEvents, KeyEvent::create2(evt, mKeyboard, true), 0.f);
 
     // Notify listeners
-	for (auto it = mKeyListeners.begin(); it != mKeyListeners.end(); it++)
+    for (auto it = mKeyListeners.begin(); it != mKeyListeners.end(); it++)
     {
         std::shared_ptr<OIS::KeyListener> lnr = it->lock();
         if (!lnr.get()) it = mKeyListeners.erase(it);
