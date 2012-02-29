@@ -11,21 +11,14 @@
 using namespace oism;
 
 
-char g_map_file_name[] = "inputmap";
-char g_conf_file_name[] = "inputconf";
+const char* g_map_filename = "inputmap";
+const char* g_conf_filename = "inputconf";
 
 
 template<class Vec>
-typename Vec::const_iterator find(Vec const& v, typename Vec::value_type val)
+bool linear_search(Vec const& v, typename Vec::value_type val)
 {
-    return std::find(v.begin(), v.end(), val);
-}
-
-
-template<class Vec>
-bool is_in(Vec const& v, typename Vec::value_type val)
-{
-    return find(v, val) != v.end();
+    return std::find(v.begin(), v.end(), val) != v.end();
 }
 
 
@@ -34,6 +27,9 @@ bool is_in(Vec const& v, typename Vec::value_type val)
 FileReader
 ===========
 */
+
+
+#define WLOG_FILE(_LINE) WLOG("In file '"<<filename<<"', "<<_LINE)
 
 
 FileReader::FileReader(const std::string& filename)
@@ -94,7 +90,7 @@ int FileReader::nextNumber(int& num)
     }
     catch (const std::invalid_argument& e)
     {
-        WLOG("File:'"<<filename<<"' Line:"<<lineNum<<" -- Expected a number, what we got:'"<<str<<"'");
+        WLOG_FILE("line:"<<lineNum<<" -- Expected a number:"<<str);
     }
     return 0;
 }
@@ -142,6 +138,7 @@ std::string FileReader::_findKey(const std::string& key)
         if (!line.compare(start, end - start, key))
             return line.substr(end);
     }
+    WLOG_FILE("key not founded for '"<<key<<"'");
     return "";
 }
 
@@ -149,17 +146,14 @@ std::string FileReader::_findKey(const std::string& key)
 bool FileReader::parseKeyValuePair(const std::string& key, int& value)
 {
     std::string val = _findKey(key);
-    if (!val.empty())
+    try
     {
-        try
-        {
-            value = std::stod(val);
-            return val.size();
-        }
-        catch (const std::invalid_argument& e)
-        {
-            WLOG("Integer expected");
-        }
+        value = std::stod(val);
+        return val.size();
+    }
+    catch (const std::invalid_argument& e)
+    {
+        WLOG_FILE("integer expected for key: '"<<key<<"'");
     }
     return 0;
 }
@@ -168,17 +162,14 @@ bool FileReader::parseKeyValuePair(const std::string& key, int& value)
 bool FileReader::parseKeyValuePair(const std::string& key, float& value)
 {
     std::string val = _findKey(key);
-    if (!val.empty())
+    try
     {
-        try
-        {
-            value = std::stof(val);
-            return val.size();
-        }
-        catch (const std::invalid_argument& e)
-        {
-            WLOG("Floating point number expected");
-        }
+        value = std::stof(val);
+        return val.size();
+    }
+    catch (const std::invalid_argument& e)
+    {
+        WLOG_FILE("floating point number expected for key: '"<<key<<"'");
     }
     return 0;
 }
@@ -201,7 +192,6 @@ SimpleSerializer
 SimpleSerializer::SimpleSerializer(const std::string& path)
 :   Serializer(path)
 {
-
     mKeyNames["escape"] = OIS::KC_ESCAPE;
     mKeyNames["1"] = OIS::KC_1;
     mKeyNames["2"] = OIS::KC_2;
@@ -385,7 +375,7 @@ SimpleSerializer::SimpleSerializer(const std::string& path)
 
 void SimpleSerializer::loadBinding(NamedBindingMap& map)
 {
-    FileReader fr(mPath+g_map_file_name);
+    FileReader fr(mPath+g_map_filename);
     if (!fr.isOpen()) return;
     std::string name, devName;
 
@@ -396,9 +386,9 @@ void SimpleSerializer::loadBinding(NamedBindingMap& map)
         
         Bind* b = map.getBinding(name, true);
         
-        if (is_in(mKeyboardDeviceNames, devName)) addKey(b, fr);
-        else if (is_in(mMouseDeviceNames, devName)) addMouse(b, fr);
-        else if (is_in(mJoyStickDeviceNames, devName)) addJoyStick(b, fr);
+        if (linear_search(mKeyboardDeviceNames, devName)) addKey(b, fr);
+        else if (linear_search(mMouseDeviceNames, devName)) addMouse(b, fr);
+        else if (linear_search(mJoyStickDeviceNames, devName)) addJoyStick(b, fr);
         else WLOG("Invalid device name: "<<devName);
     }
 }
@@ -505,9 +495,10 @@ void SimpleSerializer::addJoyStick(Bind* b, FileReader& fr) const
 
 void SimpleSerializer::loadConfig(Handler::Configuration& c)
 {
-    FileReader fr(mPath+g_conf_file_name);
+    FileReader fr(mPath+g_conf_filename);
     fr.parseKeyValuePair("mouse_sensivity_axis_x", c.mouseSensivityAxisX);
     fr.parseKeyValuePair("mouse_sensivity_axis_y", c.mouseSensivityAxisY);
+    fr.parseKeyValuePair("mouse_smoothing", c.mouseSmoothing);
 }
 
 

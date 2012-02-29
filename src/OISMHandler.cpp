@@ -12,13 +12,7 @@
 using namespace oism;
 
 
-#define SET_BINDING_VALUE(_MAP, _KEY, _VAL) \
-{ \
-    auto it = _MAP.find(_KEY); \
-    if (it != _MAP.end()) \
-        for (auto jt = it->second.begin(); jt != it->second.end(); jt++) \
-            (*jt)->setValue(_VAL); \
-}
+const char* g_log_filename = "oism_log";
 
 
 // Display warning if we dont request an assignment and binding is not existing already
@@ -33,7 +27,6 @@ Bind* NamedBindingMap::getBinding(const std::string& name, bool assign/* = false
     }
     return it->second;
 }
-
 
 
 /*
@@ -253,33 +246,51 @@ Handler& Handler::getInstance()
     return *instance;
 }
 
+
+Handler::Handler()
+:   mMouseSmoothLastX(0.f), mMouseSmoothLastY(0.f),
+    mMouseSmoothUpdatedX(false), mMouseSmoothUpdatedY(false)
+{}
+
+
 Handler::~Handler()
 {
     _saveBinding();
     _saveConfig();
     destroyOIS();
     delete mSerializer;
+#ifdef OISM_USE_LOG_FILE
+    LOG_FILE.close();
+#endif
+}
+
+
+void Handler::_init(unsigned long hWnd, const std::string& path, bool exclusive)
+{
+#ifdef OISM_USE_LOG_FILE
+    LOG_FILE.open(path+g_log_filename);
+#endif
+    mHWnd = hWnd;
+    _loadBinding();
+    _loadConfig();
+    _buildBindingListMaps();
+    createOIS(exclusive);
 }
 
 
 void Handler::update()
 {
-    // Reset mouse values
-    SET_BINDING_VALUE(mMouseEvents, MouseEvent::create(MouseEvent::CPNT_AXIS_X), 0);
-    SET_BINDING_VALUE(mMouseEvents, MouseEvent::create(MouseEvent::CPNT_AXIS_X, true), 0);
-    SET_BINDING_VALUE(mMouseEvents, MouseEvent::create(MouseEvent::CPNT_AXIS_Y), 0);
-    SET_BINDING_VALUE(mMouseEvents, MouseEvent::create(MouseEvent::CPNT_AXIS_Y, true), 0);
-
     mMouse->capture();
+    smoothMouseCleanup();
     mKeyboard->capture();
     for (auto& pair : mJoySticks) pair.first->capture();
 }
 
 
-void Handler::setExclusive(bool state/* = true*/)
+void Handler::setExclusive(bool exclusive/* = true*/)
 {
     destroyOIS();
-    createOIS(state);
+    createOIS(exclusive);
 }
 
 
@@ -365,6 +376,7 @@ void Handler::destroyOIS()
 
 void Handler::setMouseLimit(int w, int h)
 {
+    LOG("Setting mouse limit: width="<<w<<" height="<<h); 
 	mMouse->getMouseState().width = w;
 	mMouse->getMouseState().height = h;
 }
@@ -494,20 +506,82 @@ float Handler::getJoyStickValue(InputEvent::Type evt) const
 }
 
 
-// OIS::MouseListener
+void Handler::setBindingValue(InputEventBindingListMap& bindings, unsigned evt, float value)
+{
+    auto it = bindings.find(evt);
+    if (it == bindings.end()) return;
+    for (auto binding : it->second)
+        binding->setValue(value);
+}
+
+
+void Handler::setMouseValue(unsigned cpnt, float value)
+{
+    if (cpnt == MouseEvent::CPNT_AXIS_X) smoothMouse(value, mMouseSmoothLastX);
+    else if (cpnt == MouseEvent::CPNT_AXIS_Y) smoothMouse(value, mMouseSmoothLastY);
+
+    auto evt = MouseEvent::create(cpnt);
+    setBindingValue(mMouseEvents, evt, value);
+
+    MouseEvent::setReverse(evt);
+    setBindingValue(mMouseEvents, evt, -value);
+}
+
+
+void Handler::smoothMouse(float& curr, float& last)
+{
+    float tmp = curr;
+
+    if (mConfig.mouseSmoothing)
+        curr = (curr + (last * mConfig.mouseSmoothing)) / (mConfig.mouseSmoothing + 1.f);
+
+    last = tmp;
+}
+
+
+void Handler::smoothMouseCleanup()
+{
+    if (!mMouseSmoothUpdatedX) setMouseValue(MouseEvent::CPNT_AXIS_X, 0);
+    if (!mMouseSmoothUpdatedY) setMouseValue(MouseEvent::CPNT_AXIS_Y, 0);
+    mMouseSmoothUpdatedX = mMouseSmoothUpdatedY = false;
+}
+
+
+void Handler::setKeyboardValue(const OIS::KeyEvent& key, float value)
+{
+    auto evt = KeyEvent::create2(key, mKeyboard);
+    setBindingValue(mKeyEvents, evt, value);
+
+    KeyEvent::setReverse(evt);
+    setBindingValue(mKeyEvents, evt, -value);
+}
+
+
+void Handler::setJoyStickValue(OIS::ComponentType cpntType, unsigned cpnt, JoyStickListener* lnr, float value)
+{
+    auto evt = JoyStickEvent::create(cpntType, cpnt, lnr->getId());
+    setBindingValue(mJoyStickEvents, evt, value);
+    
+    JoyStickEvent::setReverse(evt);
+    setBindingValue(mJoyStickEvents, evt, -value);
+}
+
+
+// ================
+// Inplement OIS::MouseListener
+// ================
 
 
 bool Handler::mouseMoved(const OIS::MouseEvent& evt)
 {
-    SET_BINDING_VALUE(
-        mMouseEvents,
-        MouseEvent::create(MouseEvent::CPNT_AXIS_X),
-        evt.state.X.rel * mConfig.mouseSensivityAxisX);
+    if (evt.state.X.rel) mMouseSmoothUpdatedX = true;
+    if (evt.state.Y.rel) mMouseSmoothUpdatedY = true;
 
-    SET_BINDING_VALUE(
-        mMouseEvents,
-        MouseEvent::create(MouseEvent::CPNT_AXIS_Y),
-        evt.state.Y.rel * mConfig.mouseSensivityAxisY);
+    float x = evt.state.X.rel * mConfig.mouseSensivityAxisX;
+    float y = evt.state.Y.rel * mConfig.mouseSensivityAxisY;
+
+    setMouseValue(MouseEvent::CPNT_AXIS_X, x);
+    setMouseValue(MouseEvent::CPNT_AXIS_Y, y);
 
     // Notify listeners
     for (auto it = mMouseListeners.begin(); it != mMouseListeners.end(); it++)
@@ -523,8 +597,7 @@ bool Handler::mouseMoved(const OIS::MouseEvent& evt)
 
 bool Handler::mousePressed(const OIS::MouseEvent& evt, OIS::MouseButtonID id)
 {
-    SET_BINDING_VALUE(mMouseEvents, MouseEvent::create((unsigned)id), 1.f);
-    SET_BINDING_VALUE(mMouseEvents, MouseEvent::create((unsigned)id, true), -1.f);
+    setMouseValue((unsigned)id, 1.f);
 
     // Notify listeners
     for (auto it = mMouseListeners.begin(); it != mMouseListeners.end(); it++)
@@ -540,7 +613,7 @@ bool Handler::mousePressed(const OIS::MouseEvent& evt, OIS::MouseButtonID id)
 
 bool Handler::mouseReleased(const OIS::MouseEvent& evt, OIS::MouseButtonID id)
 {
-    SET_BINDING_VALUE(mMouseEvents, (unsigned)id, 0.f);
+    setMouseValue((unsigned)id, 0.f);
 
     // Notify listeners
     for (auto it = mMouseListeners.begin(); it != mMouseListeners.end(); it++)
@@ -554,13 +627,14 @@ bool Handler::mouseReleased(const OIS::MouseEvent& evt, OIS::MouseButtonID id)
 }
 
 
-// OIS::KeyListener
+// ================
+// Implement OIS::KeyListener
+// ================
 
 
 bool Handler::keyPressed(const OIS::KeyEvent& evt)
 {
-    SET_BINDING_VALUE(mKeyEvents, KeyEvent::create2(evt, mKeyboard), 1.f);
-    SET_BINDING_VALUE(mKeyEvents, KeyEvent::create2(evt, mKeyboard, true), -1.f);
+    setKeyboardValue(evt, 1.f);
 
     // Notify listeners
     for (auto it = mKeyListeners.begin(); it != mKeyListeners.end(); it++)
@@ -576,8 +650,7 @@ bool Handler::keyPressed(const OIS::KeyEvent& evt)
 
 bool Handler::keyReleased(const OIS::KeyEvent& evt)
 {
-    SET_BINDING_VALUE(mKeyEvents, KeyEvent::create2(evt, mKeyboard), 0.f);
-    SET_BINDING_VALUE(mKeyEvents, KeyEvent::create2(evt, mKeyboard, true), 0.f);
+    setKeyboardValue(evt, 0.f);
 
     // Notify listeners
     for (auto it = mKeyListeners.begin(); it != mKeyListeners.end(); it++)
@@ -591,48 +664,26 @@ bool Handler::keyReleased(const OIS::KeyEvent& evt)
 }
 
 
+// ================
 // Callback from Input::JoyStickListener
+// ================
 
 
 void Handler::buttonPressed(unsigned button, JoyStickListener* lnr)
 {
-    SET_BINDING_VALUE(
-        mJoyStickEvents,
-        JoyStickEvent::create(OIS::ComponentType::OIS_Button, button, lnr->getID()),
-        1.f);
-
-    SET_BINDING_VALUE(
-        mJoyStickEvents,
-        JoyStickEvent::create(OIS::ComponentType::OIS_Button, button, lnr->getID(), true),
-        -1.f);
+    setJoyStickValue(OIS::ComponentType::OIS_Button, button, lnr, 1.f);
 }
 
 
 void Handler::buttonReleased(unsigned button, JoyStickListener* lnr)
 {
-    SET_BINDING_VALUE(
-        mJoyStickEvents,
-        JoyStickEvent::create(OIS::ComponentType::OIS_Button, button, lnr->getID()),
-        0.f);
-
-    SET_BINDING_VALUE(
-        mJoyStickEvents,
-        JoyStickEvent::create(OIS::ComponentType::OIS_Button, button, lnr->getID(), true),
-        0.f);
+    setJoyStickValue(OIS::ComponentType::OIS_Button, button, lnr, 0.f);
 }
 
 
 void Handler::axisMoved(unsigned axis, float value, JoyStickListener* lnr)
 {
-    SET_BINDING_VALUE(
-        mJoyStickEvents,
-        JoyStickEvent::create(OIS::ComponentType::OIS_Axis, axis, lnr->getID()),
-        value);
-
-    SET_BINDING_VALUE(
-        mJoyStickEvents,
-        JoyStickEvent::create(OIS::ComponentType::OIS_Axis, axis, lnr->getID(), true),
-        -value);
+    setJoyStickValue(OIS::ComponentType::OIS_Axis, axis, lnr, value);
 }
 
 
@@ -641,25 +692,8 @@ void Handler::povMoved(unsigned idx, unsigned direction, JoyStickListener* lnr)
     float horizontalValue = JoyStickEvent::directionToHorizontal(direction);
     float verticalValue = JoyStickEvent::directionToVertical(direction);
 
-    SET_BINDING_VALUE(
-        mJoyStickEvents,
-        JoyStickEvent::create(OIS::ComponentType::OIS_POV, idx, lnr->getID()),
-        horizontalValue);
-
-    SET_BINDING_VALUE(
-        mJoyStickEvents,
-        JoyStickEvent::create(OIS::ComponentType::OIS_POV, idx, lnr->getID(), true),
-        -horizontalValue);
-
-    SET_BINDING_VALUE(
-        mJoyStickEvents,
-        JoyStickEvent::create(OIS::ComponentType::OIS_POV, idx, lnr->getID()),
-        verticalValue);
-
-    SET_BINDING_VALUE(
-        mJoyStickEvents,
-        JoyStickEvent::create(OIS::ComponentType::OIS_POV, idx, lnr->getID(), true),
-        -verticalValue);
+    setJoyStickValue(OIS::ComponentType::OIS_POV, idx, lnr, horizontalValue);
+    setJoyStickValue(OIS::ComponentType::OIS_POV, idx, lnr, verticalValue);
 }
 
 

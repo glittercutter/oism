@@ -42,7 +42,7 @@ struct InputEvent
         return getByte(evt, FlagByte) & ReverseFlag;
     }
 
-    static void setReverse(Type& evt, bool rev)
+    static void setReverse(Type& evt, bool rev = true)
     {
         unsigned flags = getByte(evt, FlagByte);
         if (rev) flags |= ReverseFlag;
@@ -275,10 +275,10 @@ class JoyStickListener : public OIS::JoyStickListener
 {
 public:
     JoyStickListener(Handler* handler, int id)
-    :   mHandler(handler), mID(id) {}
+    :   mHandler(handler), mId(id) {}
 
     void addListener(std::weak_ptr<OIS::JoyStickListener>);
-    unsigned getID() { return mID; }
+    unsigned getId() { return mId; }
 
 protected:
 	bool buttonPressed(const OIS::JoyStickEvent& evt, int button);
@@ -287,7 +287,7 @@ protected:
 	bool povMoved(const OIS::JoyStickEvent& evt, int idx);
     
     Handler* mHandler;
-    int mID;
+    int mId;
     std::list<std::weak_ptr<OIS::JoyStickListener>> mListeners;
 };
 
@@ -319,7 +319,7 @@ public:
     {}
 
     const CallbackSharedPtr& addCallback(unsigned callbackType, const CallbackSharedPtr& cb);
-    float getValue() const { return mValue; }
+    inline float getValue() const { return mValue; }
 
     // Must sync modification with 'Handler::_buildBindingListMaps()'
     void addKeyEvent(InputEvent::Type evt);
@@ -365,15 +365,12 @@ public:
     static Handler& getInstance();
 
     template<typename Serializer_t>
-    void init(unsigned long hWnd, const std::string& filename, bool exclusive = true)
+    void init(unsigned long hWnd, const std::string& path, bool exclusive = true)
     {
-        mHWnd = hWnd;
-        mSerializer = new Serializer_t(filename);
-        _loadBinding();
-        _loadConfig();
-        _buildBindingListMaps();
-        createOIS(exclusive);
+        mSerializer = new Serializer_t(path);
+        _init(hWnd, path, exclusive);
     }
+    void _init(unsigned long hWnd, const std::string& path, bool exclusive);
 
     virtual ~Handler();
 
@@ -389,7 +386,7 @@ public:
     Bind::CallbackSharedPtr callback(const std::string& name, const Bind::Callback& cb, unsigned type = Bind::CT_ON_POSITIVE);
     Bind* getBinding(const std::string& name, bool assign = false);
     void setMouseLimit(int w, int h);
-    void setExclusive(bool state = true);
+    void setExclusive(bool exclusive = true);
 
     void _loadBinding();
     void _saveBinding();
@@ -403,25 +400,35 @@ public:
     {
         Configuration()
         :   // Assign default values
-            mouseSensivityAxisX(0.2),
-            mouseSensivityAxisY(0.2)
+            mouseSensivityAxisX(0.2f),
+            mouseSensivityAxisY(0.2f),
+            mouseSmoothing(0.1f)
         {}
 
         float mouseSensivityAxisX;
         float mouseSensivityAxisY;
+        float mouseSmoothing;
         std::vector<float> joystickDeadZones;
     };
 
 protected:
-    Handler() {}
-    Handler(const Handler&); // No copy
+    Handler();
+    Handler(const Handler&); // No copying
 
     void createOIS(bool exclusive = true);
     void destroyOIS();
 
+    void setBindingValue(InputEventBindingListMap& bindings, unsigned evt, float value);
+    void setMouseValue(unsigned cnpt, float value);
+    void smoothMouseCleanup();
+    void smoothMouse(float& curr, float& old);
+    void setKeyboardValue(const OIS::KeyEvent& key, float value);
+    void setJoyStickValue(OIS::ComponentType cpntType, unsigned cpnt, JoyStickListener* lnr, float value);
+
     // Implement OIS::MouseListener
     bool mouseMoved(const OIS::MouseEvent& evt);
     bool mousePressed(const OIS::MouseEvent& evt, OIS::MouseButtonID id);
+
     // Implement OIS::KeyListener
     bool mouseReleased(const OIS::MouseEvent& evt, OIS::MouseButtonID id);
     bool keyPressed(const OIS::KeyEvent& evt);
@@ -450,6 +457,9 @@ protected:
     Configuration mConfig;
 
     unsigned long mHWnd;
+
+    float mMouseSmoothLastX, mMouseSmoothLastY;
+    bool mMouseSmoothUpdatedX, mMouseSmoothUpdatedY;
 };
 
 

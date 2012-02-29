@@ -34,9 +34,17 @@ elseif (UNIX)
         )
 endif ()
 
-set (CMAKE_CXX_FLAGS_RELEASE -O2)
-set (CMAKE_CXX_FLAGS -O0)
 add_definitions (-std=c++0x -Wall)
+
+set (OISM_USE_LOG "FALSE" CACHE BOOL "OISM use log")
+set (OISM_USE_LOG_FILE "FALSE" CACHE BOOL "OISM use log file")
+
+if (OISM_USE_LOG)
+    add_definitions(-DOISM_USE_LOG)
+endif ()
+if (OISM_USE_LOG_FILE)
+    add_definitions(-DOISM_USE_LOG_FILE)
+endif ()
 
 add_executable (test ${SRC})
 target_link_libraries (test ${LIBS})
