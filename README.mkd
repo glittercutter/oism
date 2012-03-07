@@ -1,10 +1,13 @@
 OISM - Mapping for OIS  
 ===
 
-File format for the SimpleSerializer  
 ---
 
-## Map file 
+File format for the 'SimpleSerializer'  
+===
+
+Map file 
+---
 
 Nothing is case sensitive, eg. '**Hello**' is the same as '**heLLo**'  
 Tokens are separated by space, and each line is defined as  
@@ -58,17 +61,18 @@ Each device has aliases defined.
         
         button, axis, slider, pov, vector3  
 
-
-## Config file  
+Config file  
+---
 
 The configuration file consist of simple key value pair on each line.
 
-
-Basic usage
 ---
 
+Basic usage
+===
+
     auto input = oism::Handler::getSingleton();
-    input.init(oism::SimpleSerializer>(your_window_id, "configuration_path");
+    input.init<oism::SimpleSerializer>(your_window_id, "configuration_path");
     
     // Define callback
     auto cb = input.callback("quit", [&](){running = false;});
