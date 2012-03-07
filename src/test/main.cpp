@@ -208,7 +208,10 @@ int main(int argc, char** argv)
     auto cbSharedPointer = input.callback("quit", [&](){g_run = false;});
     {
         // Callback is disabled at the end of this scope
-        auto cbOutOfScope = input.callback("disabled", [](){std::cout << "this should disabled!" << std::endl;});
+        auto cbOutOfScope = input.callback("disabled",
+            [](){
+                std::cout << "this should be disabled!" << std::endl;
+            });
     }
 
     auto walkBinding = input.getBinding("walk");
