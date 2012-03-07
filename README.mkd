@@ -1,5 +1,76 @@
-OISM
-====
+OISM - Mapping for OIS  
+===
 
-Mapping for OIS
----------------
+File format for the SimpleSerializer  
+---
+
+## Map file 
+
+Nothing is case sensitive, eg. '**Hello**' is the same as '**heLLo**'  
+Tokens are separated by space, and each line is defined as  
+    
+    (mapping) (device) (input)  
+
+### Mapping
+Can be any word, this is what you will use to access it in your code.
+
+### Device
+
+Each device has aliases defined.  
+
+* **Keyboard**  
+
+    k, kb, key, keyboard  
+
+* **Mouse**  
+
+    m, ms, mouse 
+
+* **Joystick**  
+
+    j, js, joystick  
+    **NOTE**: Must be followed by the device number. *eg. js 0*  
+
+### Input
+
+* **Keyboard**  
+
+    Key name are the same as OIS enums.  
+    Modifiers are separated by a plus sign '**+**'.  
+    Multiple key can be defined on the same line.  
+    Prepend a minus sign '**-**' to reverse the value.   
+
+        eg. alt+return w -s  
+
+* **Mouse**  
+
+    Same as keyboard, names are:  
+
+        left, right, middle, button[3-7], axis_x axis_y  
+
+* **Joystick**  
+
+    Component number must be appended.  
+
+        eg. button 0  
+
+    Names:
+        
+        button, axis, slider, pov, vector3  
+
+
+## Config file  
+
+The configuration file consist of simple key value pair on each line.
+
+
+Basic usage
+---
+
+    auto input = oism::Handler::getSingleton();
+    input.init(oism::SimpleSerializer>(your_window_id, "configuration_path");
+    
+    // Define callback
+    auto cb = input.callback("quit", [&](){running = false;});
+
+    while (running) input.update();
