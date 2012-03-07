@@ -58,7 +58,7 @@ bool FileReader::isNegative(std::string& str)
 {
     if (!str.empty() && str[0] == '-')
     {
-        str.erase(0);
+        str.erase(str.begin());
         return true;
     }
     return false;
@@ -138,7 +138,7 @@ std::string FileReader::_findKey(const std::string& key)
         if (!line.compare(start, end - start, key))
             return line.substr(end);
     }
-    WLOG_FILE("key not founded for '"<<key<<"'");
+    WLOG_FILE("key not found '"<<key<<"'");
     return "";
 }
 
@@ -189,8 +189,25 @@ SimpleSerializer
 */
 
 
+#define OIS_KEY_COUNT 145
+#define OIS_KEYMOD_COUNT 3
+#define MOUSE_CPNT_COUNT 10
+#define JOYSTICK_CPNT_COUNT 5
+#define KEYBOARD_DEVNAME_COUNT 5
+#define MOUSE_DEVNAME_COUNT 3
+#define JOYSTICK_DEVNAME_COUNT 3
+
+
 SimpleSerializer::SimpleSerializer(const std::string& path)
-:   Serializer(path)
+:   Serializer(path),
+    mKeyNames(OIS_KEY_COUNT),
+    mKeyModifierNames(OIS_KEYMOD_COUNT),
+    mMouseComponentNames(MOUSE_CPNT_COUNT),
+    mJoyStickComponentNames(JOYSTICK_CPNT_COUNT),
+    mKeyboardDeviceNames(KEYBOARD_DEVNAME_COUNT),
+    mMouseDeviceNames(MOUSE_DEVNAME_COUNT),
+    mJoyStickDeviceNames(JOYSTICK_DEVNAME_COUNT)
+
 {
     mKeyNames["escape"] = OIS::KC_ESCAPE;
     mKeyNames["1"] = OIS::KC_1;

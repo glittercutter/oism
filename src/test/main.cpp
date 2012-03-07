@@ -6,6 +6,14 @@
 #include <iostream>
 #include <string>
 
+
+
+/////////////////////////////////////////////////////////////////
+// Everything except main() is taken from the OIS console demo //
+/////////////////////////////////////////////////////////////////
+
+
+
 #if defined OIS_WIN32_PLATFORM
 #define WIN32_LEAN_AND_MEAN
 #include "windows.h"
@@ -199,15 +207,22 @@ int main(int argc, char** argv)
     // Callbacks are disabled when the shared pointer goes out of scope
     auto cbSharedPointer = input.callback("quit", [&](){g_run = false;});
     {
-        auto cbOutOfScope = input.callback("disabled", [](){std::cout << "error!" << std::endl;});
+        // Callback is disabled at the end of this scope
+        auto cbOutOfScope = input.callback("disabled", [](){std::cout << "this should disabled!" << std::endl;});
     }
-    auto cbJoystick = input.callback("hello_joystick", [](){std::cout << "joystick" << std::endl;});
 
-    while (g_run) { input.update(); }
+    auto walkBinding = input.getBinding("walk");
+
+    while (g_run)
+    {
+        input.update();
+        std::cout << "walk value=" << walkBinding->getValue();
+        std::cout << "                      \r" << std::flush;
+    }
     
     delete &input;
     destroyWindow();
 
-    std::cout << "\nTerminated normally\n";
+    std::cout << std::endl << "Terminated normally" << std::endl;
     return 0;
 }

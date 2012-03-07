@@ -36,14 +36,14 @@ endif ()
 
 add_definitions (-std=c++0x -Wall)
 
-set (OISM_USE_LOG "FALSE" CACHE BOOL "OISM use log")
-set (OISM_USE_LOG_FILE "FALSE" CACHE BOOL "OISM use log file")
+set (OISM_ENABLE_LOG "FALSE" CACHE BOOL "OISM use log")
+set (OISM_ENABLE_LOG_FILE "FALSE" CACHE BOOL "OISM use log file")
 
-if (OISM_USE_LOG)
-    add_definitions(-DOISM_USE_LOG)
+if (OISM_ENABLE_LOG)
+    add_definitions(-DOISM_ENABLE_LOG)
 endif ()
-if (OISM_USE_LOG_FILE)
-    add_definitions(-DOISM_USE_LOG_FILE)
+if (OISM_ENABLE_LOG_FILE)
+    add_definitions(-DOISM_ENABLE_LOG_FILE)
 endif ()
 
 add_executable (test ${SRC})

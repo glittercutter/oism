@@ -1,4 +1,6 @@
 quit kb escape
 quit ms left
+quit js 0 button 0
 disabled kb return
-hello_joystick js 0 button 9
+walk kb w -s
+walk js 0 axis 0

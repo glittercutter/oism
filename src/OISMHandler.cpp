@@ -259,17 +259,17 @@ Handler::~Handler()
     _saveConfig();
     destroyOIS();
     delete mSerializer;
-#ifdef OISM_USE_LOG_FILE
+#ifdef OISM_ENABLE_LOG_FILE
     LOG_FILE.close();
-#endif
+#endif // OISM_ENABLE_LOG_FILE
 }
 
 
 void Handler::_init(unsigned long hWnd, const std::string& path, bool exclusive)
 {
-#ifdef OISM_USE_LOG_FILE
+#ifdef OISM_ENABLE_LOG_FILE
     LOG_FILE.open(path+g_log_filename);
-#endif
+#endif // OISM_ENABLE_LOG_FILE
     mHWnd = hWnd;
     _loadBinding();
     _loadConfig();
@@ -336,7 +336,7 @@ void Handler::createOIS(bool exclusive/* = true*/)
     }
 
     unsigned numJoystick = mOIS->getNumberOfDevices(OIS::OISJoyStick);
-    if (numJoystick) LOG("Creating joystick:");
+    if (numJoystick)LOG("Creating joystick:");
 
     for (int i = 0; i < mOIS->getNumberOfDevices(OIS::OISJoyStick); i++)
     {

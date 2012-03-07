@@ -1,16 +1,16 @@
 #pragma once
 
+#ifdef OISM_ENABLE_LOG
+
 #include <iostream>
 #include <fstream>
 
-#ifdef OISM_USE_LOG
-
-#ifdef OISM_USE_LOG_FILE
+#ifdef OISM_ENABLE_LOG_FILE
 static std::ofstream LOG_FILE;
 #define LOG_WRITE(_STR) LOG_FILE << _STR; std::cout << _STR;
-#else
+#else // OISM_ENABLE_LOG_FILE
 #define LOG_WRITE(_STR) std::cout << _STR;
-#endif
+#endif // OISM_ENABLE_LOG_FILE
 
 #define LOG_IMP(_LINE) \
 { \
@@ -23,10 +23,10 @@ static std::ofstream LOG_FILE;
 #define WLOG(_LINE) LOG_IMP("WARNING: " << _LINE)
 #define ELOG(_LINE) LOG_IMP("ERROR: " << _LINE << " -- " __FILE__ << " " << __FUNCTION__ << " " << __LINE__)
 
-#else // OISM_USE_LOG
+#else // OISM_ENABLE_LOG
 
 #define LOG(_LINE) ;
 #define WLOG(_LINE) ;
 #define ELOG(_LINE) ;
 
-#endif // OISM_USE_LOG
+#endif // OISM_ENABLE_LOG
