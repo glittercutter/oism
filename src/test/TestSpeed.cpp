@@ -3,8 +3,6 @@
 
 #include "TestUtils.h"
 
-#include <OISException.h>
-
 #include <iostream>
 #include <string>
 #include <chrono>
@@ -15,10 +13,10 @@ int main(int argc, char** argv)
     auto& input = oism::Handler::getInstance();
     input.init<oism::SimpleSerializer>(testutils::createWindow(), "../");
 
-    // Callbacks are disabled when the shared pointer goes out of scope
     auto cbSharedPointer = input.callback("quit", [](){testutils::isRunning = false;});
     auto walkBinding = input.getBinding("walk");
 
+    // Dummy bindings
     auto test0Binding = input.getBinding("test0");
     auto test1Binding = input.getBinding("test1");
     auto test2Binding = input.getBinding("test2");
