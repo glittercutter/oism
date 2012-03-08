@@ -3,6 +3,8 @@
 
 #pragma once 
 
+#include "mm/cache_map.hpp"
+
 #include <OISEvents.h>
 #include <OISInputManager.h>
 #include <OISJoyStick.h>
@@ -50,7 +52,7 @@ struct InputEvent
         setByte(evt, flags, FlagByte);
     }
 
-    static Type getByte(Type evt, unsigned num)
+    static inline Type getByte(Type evt, unsigned num)
     {
         unsigned ls = 8 * (num - 1);
         unsigned rs = 8 * 3;
@@ -59,17 +61,13 @@ struct InputEvent
         return evt;
     }
 
-    static void setByte(Type& evt, unsigned data, unsigned num)
+    static inline void setByte(Type& evt, unsigned data, unsigned num)
     {
         unsigned char* cevt = (unsigned char*)&evt;
         cevt += num - 1;
         *cevt = *((unsigned char*)&data);
     }
 };
-
-
-typedef std::deque<Bind*> BindingList;
-typedef std::unordered_map<InputEvent::Type, BindingList> InputEventBindingListMap;
 
 
 struct DefaultEvent
@@ -412,6 +410,9 @@ public:
     };
 
 protected:
+    typedef std::deque<Bind*> BindingList;
+    typedef mm::cache_map<InputEvent::Type, BindingList> InputEventBindingListMap;
+
     Handler();
     Handler(const Handler&); // No copying
 

@@ -5,7 +5,7 @@ set (SRC
     src/OISMHandler.cpp
     src/OISMHandlerUgly.cpp
     src/OISMSimpleSerializer.cpp
-    src/test/main.cpp
+    src/test/TestUtils.cpp
     )
 
 find_path (OIS_INCLUDE_DIRECTORY NAMES OIS.h PATHS /usr/include/OIS OIS)
@@ -46,5 +46,8 @@ if (OISM_ENABLE_LOG_FILE)
     add_definitions(-DOISM_ENABLE_LOG_FILE)
 endif ()
 
-add_executable (test ${SRC})
+add_executable (test ${SRC} src/test/Test.cpp)
 target_link_libraries (test ${LIBS})
+
+add_executable (test-speed ${SRC} src/test/TestSpeed.cpp)
+target_link_libraries (test-speed ${LIBS})
