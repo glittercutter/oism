@@ -56,10 +56,12 @@ struct InputEvent
 
     static inline unsigned char getByte(Type evt, unsigned num)
     {
+        assert(num >= 1 && num <= 4);
         return ((unsigned char*)&evt)[4 - num];
     }
     static inline void setByte(Type& evt, unsigned char data, unsigned num)
     {
+        assert(num >= 1 && num <= 4);
         ((unsigned char*)&evt)[4 - num] = data;
     }
 };
@@ -370,7 +372,7 @@ public:
 
     void update();
     Bind::CallbackSharedPtr callback(const std::string& name, const Bind::Callback& cb, unsigned type = Bind::CT_ON_POSITIVE);
-    Bind* getBinding(const std::string& name, bool assign = false);
+    Bind* getBinding(const std::string& name, bool forUse = true);
     void setMouseLimit(int w, int h);
     void setExclusive(bool exclusive = true);
 

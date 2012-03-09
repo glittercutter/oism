@@ -462,9 +462,9 @@ Bind::CallbackSharedPtr Handler::callback(const std::string& name, const Bind::C
 }
 
 
-Bind* Handler::getBinding(const std::string& name, bool assign/* = false*/)
+Bind* Handler::getBinding(const std::string& name, bool forUse/* = true*/)
 {
-    return mBindings.getBinding(name, assign);
+    return mBindings.getBinding(name, forUse);
 }
 
 
