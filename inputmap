@@ -1,6 +1,5 @@
-quit kb escape
-quit ms left
-quit js 0 button 0
-disabled kb return
-walk kb w -s
-walk js 0 axis 0
+quit keyboard escape
+quit mouse left
+walk keyboard w
+walk keyboard -s
+walk joystick 0 button 1

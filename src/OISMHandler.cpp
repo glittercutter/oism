@@ -11,18 +11,25 @@
 
 using namespace oism;
 
-
 const char* g_log_filename = "oism_log";
 
 
-// Display warning if we dont request an assignment and binding is not existing already
-Bind* NamedBindingMap::getBinding(const std::string& name, bool assign/* = false*/)
+/*
+=====================
+NamedBindingMap
+=====================
+*/
+
+
+// NOTE: Emit a warning if you want to use(not constructing)
+// a non-existing binding.
+Bind* NamedBindingMap::getBinding(const std::string& name, bool forUse/* = true*/)
 {
     auto it = map.find(name);
     if (it == map.end())
     {
         LOG("New binding '" << name << "'.");
-        if (!assign) WLOG("Binding '" << name << " has no input");
+        if (forUse) WLOG("Binding '" << name << " has no input");
         it = map.insert(std::make_pair(name, new Bind())).first;
     }
     return it->second;
@@ -281,7 +288,7 @@ void Handler::_init(unsigned long hWnd, const std::string& path, bool exclusive)
 void Handler::update()
 {
     mMouse->capture();
-    smoothMouseCleanup();
+    //smoothMouseCleanup();
     mKeyboard->capture();
     for (auto& pair : mJoySticks) pair.first->capture();
 }

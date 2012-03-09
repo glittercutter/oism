@@ -24,6 +24,8 @@
 // NOTE: Bit shifting assume at least 32bits, little-endian machine
 static_assert(sizeof(unsigned) >= 4, "unsigned type need to be at least 4 bytes wide");
 
+#include "OISMLog.h"
+
 namespace oism
 {
 
@@ -35,15 +37,15 @@ class Serializer;
 
 struct InputEvent
 {
+    // Byte number start from the right.
     typedef unsigned Type;
     static const unsigned FlagByte = 1;
-    static const unsigned char ReverseFlag = 1;
+    static const unsigned char ReverseFlag = 1 << 0;
 
-    static bool getReverse(Type evt)
+    static bool getReverse(const Type& evt)
     {
         return getByte(evt, FlagByte) & ReverseFlag;
     }
-
     static void setReverse(Type& evt, bool rev = true)
     {
         unsigned flags = getByte(evt, FlagByte);
@@ -52,61 +54,21 @@ struct InputEvent
         setByte(evt, flags, FlagByte);
     }
 
-    static inline Type getByte(Type evt, unsigned num)
+    static inline unsigned char getByte(Type evt, unsigned num)
     {
-        unsigned ls = 8 * (num - 1);
-        unsigned rs = 8 * 3;
-        evt <<= ls;
-        evt >>= rs;
-        return evt;
+        return ((unsigned char*)&evt)[4 - num];
     }
-
-    static inline void setByte(Type& evt, unsigned data, unsigned num)
+    static inline void setByte(Type& evt, unsigned char data, unsigned num)
     {
-        unsigned char* cevt = (unsigned char*)&evt;
-        cevt += num - 1;
-        *cevt = *((unsigned char*)&data);
+        ((unsigned char*)&evt)[4 - num] = data;
     }
-};
-
-
-struct DefaultEvent
-{
-    DefaultEvent& addKey(InputEvent::Type evt)
-    {
-        keyEvents.push_back(evt);
-        return *this;
-    }
-
-    DefaultEvent& addMouseButton(InputEvent::Type evt)
-    {
-        mouseEvents.push_back(evt);
-        return *this;
-    }
-
-    DefaultEvent& addJoyStickEvent(InputEvent::Type evt)
-    {
-        joyStickEvents.push_back(evt);
-        return *this;
-    }
-    
-    bool isEmpty() const
-    {
-        return keyEvents.empty() &&
-               mouseEvents.empty() &&
-               joyStickEvents.empty();
-    }
-
-    std::list<InputEvent::Type> keyEvents;
-    std::list<InputEvent::Type> mouseEvents;
-    std::list<InputEvent::Type> joyStickEvents;
 };
 
 
 struct KeyEvent : public InputEvent
 {
-    static const unsigned ModifierByte = 3; // Modifier on third byte
-    static const unsigned KeyByte = 4; // Key on fourth byte
+    static const unsigned ModifierByte = 3;
+    static const unsigned KeyByte = 4;
 
     static InputEvent::Type create(unsigned key, unsigned mod, bool rev)
     {
@@ -124,17 +86,14 @@ struct KeyEvent : public InputEvent
     {
         setByte(evt, key, KeyByte);
     }
-
     static unsigned getKey(InputEvent::Type evt)
     {
         return getByte(evt, KeyByte);
     }
-
     static void setModifier(InputEvent::Type& evt, unsigned mod)
     {
         setByte(evt, mod, ModifierByte);
     }
-
     static unsigned getModifier(InputEvent::Type evt)
     {
         return getByte(evt, ModifierByte);
@@ -150,7 +109,7 @@ struct KeyEvent : public InputEvent
 struct MouseEvent : public InputEvent
 {
     // Component on the fourth byte
-    static const unsigned ComponentByte = 4; // Component on fourth byte
+    static const unsigned ComponentByte = 4;
 
     static Type create(unsigned component, bool rev = false)
     {
@@ -164,7 +123,6 @@ struct MouseEvent : public InputEvent
     {
         setByte(evt, component, ComponentByte);
     }
-
     static unsigned getComponent(Type evt)
     {
         return getByte(evt, ComponentByte);
@@ -190,9 +148,9 @@ struct MouseEvent : public InputEvent
 
 struct JoyStickEvent : public InputEvent
 {
-    static const unsigned JoystickNumberByte = 2; // Joystick number on second byte
-    static const unsigned ComponentByte = 3; // Component on third byte
-    static const unsigned ComponentIdByte = 4; // ComponentId on fourth byte
+    static const unsigned JoystickNumberByte = 2;
+    static const unsigned ComponentByte = 3;
+    static const unsigned ComponentIdByte = 4;
 
     static Type create(unsigned component, unsigned componentId, unsigned joystickNum, bool rev = false)
     {
@@ -208,27 +166,22 @@ struct JoyStickEvent : public InputEvent
     {
         setByte(evt, num, JoystickNumberByte);
     }
-
     static unsigned getJoystickNumber(Type evt)
     { 
         return getByte(evt, JoystickNumberByte);
     }
-
     static void setComponent(Type& evt, unsigned component)
     {
         setByte(evt, component, ComponentByte);
     }
-
     static unsigned getComponent(Type evt)
     {
         return getByte(evt, ComponentByte);
     }
-
     static void setComponentId(Type& evt, unsigned id)
     {
         setByte(evt, id, ComponentIdByte);
     }
-
     static unsigned getComponentId(Type evt)
     {
         return getByte(evt, ComponentIdByte);
@@ -247,7 +200,6 @@ struct JoyStickEvent : public InputEvent
         if (dir & OIS::Pov::East) return 1.f;
         return 0.f;
     }
-
     static float directionToVertical(unsigned dir)
     {
         if (dir & OIS::Pov::South) return -1.f;
@@ -261,11 +213,42 @@ struct JoyStickEvent : public InputEvent
         if (v <= -1.f) return -1.f;
         return v;
     }
-
     static float normalizeAxisValue(float value)
     {
         return clipOne(value / (float)OIS::JoyStick::MAX_AXIS);
     }
+};
+
+
+struct DefaultEvent
+{
+    // Thoses can be chained
+    DefaultEvent& key(InputEvent::Type evt)
+    {
+        keyEvents.push_back(evt);
+        return *this;
+    }
+    DefaultEvent& mouse(InputEvent::Type evt)
+    {
+        mouseEvents.push_back(evt);
+        return *this;
+    }
+    DefaultEvent& joyStick(InputEvent::Type evt)
+    {
+        joyStickEvents.push_back(evt);
+        return *this;
+    }
+
+    bool isEmpty() const
+    {
+        return keyEvents.empty() &&
+               mouseEvents.empty() &&
+               joyStickEvents.empty();
+    }
+
+    std::list<InputEvent::Type> keyEvents;
+    std::list<InputEvent::Type> mouseEvents;
+    std::list<InputEvent::Type> joyStickEvents;
 };
 
 
@@ -299,6 +282,7 @@ public:
     typedef std::shared_ptr<Callback> CallbackSharedPtr;
     typedef std::weak_ptr<Callback> CallbackWeakPtr;
     typedef std::list<CallbackWeakPtr> CallbackWeakPtrList;
+    typedef std::list<InputEvent::Type> InputEventList;
 
     enum CallbackType
     {
@@ -327,15 +311,19 @@ public:
     void removeMouseEvent(InputEvent::Type evt);
     void removeJoyStickEvent(InputEvent::Type evt);
 
+    const InputEventList& getKeyEvents() {return mKeyEvents;}
+    const InputEventList& getMouseEvents() {return mMouseEvents;}
+    const InputEventList& getJoyStickEvents() {return mJoyStickEvents;}
+
     // Return farthest value from zero -/+
     float _getMaxValue() const;
 
 protected:
     // Used by friend class 'Handler'
     void setValue(float);
-    std::list<InputEvent::Type> mKeyEvents;
-    std::list<InputEvent::Type> mMouseEvents;
-    std::list<InputEvent::Type> mJoyStickEvents;
+    InputEventList mKeyEvents;
+    InputEventList mMouseEvents;
+    InputEventList mJoyStickEvents;
 
 private:
     void doCallback(unsigned callbackType);
@@ -348,7 +336,7 @@ private:
 
 struct NamedBindingMap
 {
-    Bind* getBinding(const std::string& name, bool assign = false);
+    Bind* getBinding(const std::string& name, bool forUse = true);
     void clear() { map.clear(); }
 
     std::unordered_map<std::string, Bind*> map;

@@ -10,38 +10,44 @@
 namespace oism
 {
 
+typedef std::unordered_map<std::string, unsigned> NamedEnum;
 
-struct FileReader
+struct File
 {
-    FileReader(const std::string& filename);
+    File(const std::string& filename);
     bool isOpen();
 
-    static void toLower(std::string& str);
-    static bool isNegative(std::string& str);
-
-    // Return word length
+    // Return length
     int nextWord(std::string& str);
-
-    // Return word length
     int nextNumber(int& num);
-
-    // Return number of splits
-    static int splitWord(char token, const std::string& word, std::vector<std::string>& splits);
-
-    // Return line length
     int nextLine();
 
-    std::string _findKey(const std::string& key);
-    bool parseKeyValuePair(const std::string& key, int& value);
-    bool parseKeyValuePair(const std::string& key, float& value);
-    bool parseKeyValuePair(const std::string& key, std::string& value);
+    bool readKeyValuePair(const std::string& key, int& value);
+    bool readKeyValuePair(const std::string& key, float& value);
+    bool readKeyValuePair(const std::string& key, std::string& value);
 
-    std::ifstream fs;
+    template <class T>
+    void writeKeyValuePair(const std::string& key, const T& value)
+    {
+        fs << key << ' ' << value << std::endl;
+    }
+
+    std::string _findKey(const std::string& key);
+
+    std::fstream fs;
     std::string line;
     std::string filename;
     size_t wend;
     size_t lineNum;
 };
+
+
+template <class T>
+inline File& operator<<(File& file, const T& t)
+{
+    file.fs << t;
+    return file;
+}
 
 
 class SimpleSerializer : public Serializer
@@ -55,14 +61,18 @@ public:
     virtual void saveConfig(const Handler::Configuration&);
 
 protected:
-    void addKey(Bind* b, FileReader& fr) const;
-    void addMouse(Bind* b, FileReader& fr) const;
-    void addJoyStick(Bind* b, FileReader& fr) const;
+    void addKey(Bind* b, File& fr) const;
+    void addMouse(Bind* b, File& fr) const;
+    void addJoyStick(Bind* b, File& fr) const;
 
-    std::unordered_map<std::string, unsigned> mKeyNames;
-    std::unordered_map<std::string, unsigned> mKeyModifierNames;
-    std::unordered_map<std::string, unsigned> mMouseComponentNames;
-    std::unordered_map<std::string, unsigned> mJoyStickComponentNames;
+    std::string keyEventToString(const InputEvent::Type& evt);
+    std::string mouseEventToString(const InputEvent::Type& evt);
+    std::string joyStickEventToString(const InputEvent::Type& evt);
+
+    NamedEnum mKeyNames;
+    NamedEnum mKeyModifierNames;
+    NamedEnum mMouseComponentNames;
+    NamedEnum mJoyStickComponentNames;
 
     std::vector<std::string> mKeyboardDeviceNames;
     std::vector<std::string> mMouseDeviceNames;

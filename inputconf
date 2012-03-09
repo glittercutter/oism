@@ -1,2 +1,3 @@
 mouse_sensivity_axis_x 0.3
 mouse_sensivity_axis_y 0.3
+mouse_smoothing 0.1

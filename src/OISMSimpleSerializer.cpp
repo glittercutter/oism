@@ -10,51 +10,56 @@
 
 using namespace oism;
 
+#define WLOG_FILE(_LINE) WLOG("In file '"<<filename<<"', "<<_LINE)
+
+#define DO_CONFIG(_FUNC, _C) \
+{ \
+    File file(mPath+g_conf_filename); \
+    file._FUNC("mouse_sensivity_axis_x", _C.mouseSensivityAxisX); \
+    file._FUNC("mouse_sensivity_axis_y", _C.mouseSensivityAxisY); \
+    file._FUNC("mouse_smoothing", _C.mouseSmoothing); \
+} \
 
 const char* g_map_filename = "inputmap";
 const char* g_conf_filename = "inputconf";
 
 
 template<class Vec>
-bool linear_search(Vec const& v, typename Vec::value_type val)
+bool linear_search(const Vec& v, const typename Vec::value_type& val)
 {
     return std::find(v.begin(), v.end(), val) != v.end();
 }
 
 
-/*
-===========
-FileReader
-===========
-*/
-
-
-#define WLOG_FILE(_LINE) WLOG("In file '"<<filename<<"', "<<_LINE)
-
-
-FileReader::FileReader(const std::string& filename)
-:   fs(filename), filename(filename), wend(0), lineNum(0)
+// Linear search for the value instead of the key
+template<class Map>
+typename Map::const_iterator reverse_map_search(const Map& m, const typename Map::mapped_type& v)
 {
-    if (!fs.is_open())
+    for (auto it = m.begin(); it != m.end(); it++) if (it->second == v) return it;
+    return m.end();
+}
+
+
+std::string enum_to_string(const NamedEnum& m, unsigned v)
+{
+    auto it = reverse_map_search(m, v);
+    if (it == m.end()) 
     {
-        ELOG("Error opening file: "<<filename);
+        WLOG("Invalid enum: " << v);
+        return "__INVALID__";
     }
+
+    return it->first;
 }
 
 
-bool FileReader::isOpen()
-{
-    return fs.is_open();
-}
-
-
-void FileReader::toLower(std::string& str)
+void to_lower(std::string& str)
 {
     for (auto& c : str) c = tolower(c);
 }
 
 
-bool FileReader::isNegative(std::string& str)
+bool is_negative(std::string& str)
 {
     if (!str.empty() && str[0] == '-')
     {
@@ -65,20 +70,56 @@ bool FileReader::isNegative(std::string& str)
 }
 
 
-// Return word length
-int FileReader::nextWord(std::string& str)
+// Return number of splits
+int split_word(char token, const std::string& word, std::vector<std::string>& splits)
+{
+    size_t prev = 0; 
+    size_t next = 0; 
+    splits.clear();
+
+    while (next < word.size())
+    {
+        next = word.find_first_of(token, prev);
+        splits.push_back(word.substr(prev, next));
+        prev = next + 1;
+    }
+
+    return splits.size();
+}
+
+
+/*
+===========
+File
+===========
+*/
+
+
+File::File(const std::string& filename)
+:   fs(filename), filename(filename), wend(0), lineNum(0)
+{
+    if (!fs.is_open())
+        ELOG("Error opening file: " << filename);
+} 
+
+bool File::isOpen()
+{
+    return fs.is_open();
+}
+
+
+int File::nextWord(std::string& str)
 {
     size_t wstart = line.find_first_not_of(' ', wend);
     if (wstart == std::string::npos) return 0;
     wend = line.find_first_of(' ', wstart);
     str = line.substr(wstart, wend - wstart);
-    toLower(str);
+    to_lower(str);
     return str.size();
 }
 
 
-// Return word length
-int FileReader::nextNumber(int& num)
+int File::nextNumber(int& num)
 {
     std::string str;
     if (!nextWord(str)) return 0;
@@ -96,26 +137,7 @@ int FileReader::nextNumber(int& num)
 }
 
 
-// Return number of splits
-int FileReader::splitWord(char token, const std::string& word, std::vector<std::string>& splits)
-{
-    size_t prev = 0; 
-    size_t next = 0; 
-    splits.clear();
-
-    while (next < word.size())
-    {
-        next = word.find_first_of(token, prev);
-        splits.push_back(word.substr(prev, next));
-        prev = next + 1;
-    }
-
-    return splits.size();
-}
-
-
-// Return line length
-int FileReader::nextLine()
+int File::nextLine()
 {
     wend = 0;
     std::getline(fs, line);
@@ -124,7 +146,7 @@ int FileReader::nextLine()
 }
 
 
-std::string FileReader::_findKey(const std::string& key)
+std::string File::_findKey(const std::string& key)
 {
     std::string line;
     while (std::getline(fs, line))
@@ -143,7 +165,7 @@ std::string FileReader::_findKey(const std::string& key)
 }
 
 
-bool FileReader::parseKeyValuePair(const std::string& key, int& value)
+bool File::readKeyValuePair(const std::string& key, int& value)
 {
     std::string val = _findKey(key);
     try
@@ -159,7 +181,7 @@ bool FileReader::parseKeyValuePair(const std::string& key, int& value)
 }
 
 
-bool FileReader::parseKeyValuePair(const std::string& key, float& value)
+bool File::readKeyValuePair(const std::string& key, float& value)
 {
     std::string val = _findKey(key);
     try
@@ -175,7 +197,7 @@ bool FileReader::parseKeyValuePair(const std::string& key, float& value)
 }
 
 
-bool FileReader::parseKeyValuePair(const std::string& key, std::string& value)
+bool File::readKeyValuePair(const std::string& key, std::string& value)
 {
     value = _findKey(key);
     return value.size();
@@ -392,7 +414,7 @@ SimpleSerializer::SimpleSerializer(const std::string& path)
 
 void SimpleSerializer::loadBinding(NamedBindingMap& map)
 {
-    FileReader fr(mPath+g_map_filename);
+    File fr(mPath+g_map_filename);
     if (!fr.isOpen()) return;
     std::string name, devName;
 
@@ -401,7 +423,7 @@ void SimpleSerializer::loadBinding(NamedBindingMap& map)
         if (!fr.nextWord(name)) continue;
         if (!fr.nextWord(devName)) continue;
         
-        Bind* b = map.getBinding(name, true);
+        Bind* b = map.getBinding(name, false);
         
         if (linear_search(mKeyboardDeviceNames, devName)) addKey(b, fr);
         else if (linear_search(mMouseDeviceNames, devName)) addMouse(b, fr);
@@ -411,7 +433,7 @@ void SimpleSerializer::loadBinding(NamedBindingMap& map)
 }
 
 
-void SimpleSerializer::addKey(Bind* b, FileReader& fr) const
+void SimpleSerializer::addKey(Bind* b, File& fr) const
 {
     // Multiple combination can be separated by a space
     std::string word;
@@ -424,11 +446,11 @@ void SimpleSerializer::addKey(Bind* b, FileReader& fr) const
         // Modifier are setted with a plus sign
         // example: shift+left
         std::vector<std::string> splits;
-        FileReader::splitWord('+', word, splits);
+        split_word('+', word, splits);
 
         for (std::string& keyName : splits)
         {
-            if (FileReader::isNegative(keyName)) rev = true;
+            if (is_negative(keyName)) rev = true;
 
             auto kmnIt = mKeyModifierNames.find(keyName);
             if (kmnIt != mKeyModifierNames.end())
@@ -452,13 +474,13 @@ void SimpleSerializer::addKey(Bind* b, FileReader& fr) const
 }
 
 
-void SimpleSerializer::addMouse(Bind* b, FileReader& fr) const
+void SimpleSerializer::addMouse(Bind* b, File& f) const
 {
     // Multiple combination can be separated by a space
     std::string word;
-    while (fr.nextWord(word))
+    while (f.nextWord(word))
     {
-        bool rev = FileReader::isNegative(word);
+        bool rev = is_negative(word);
 
         auto it = mMouseComponentNames.find(word);
         if (it == mMouseComponentNames.end())
@@ -472,25 +494,25 @@ void SimpleSerializer::addMouse(Bind* b, FileReader& fr) const
 }
 
 
-void SimpleSerializer::addJoyStick(Bind* b, FileReader& fr) const
+void SimpleSerializer::addJoyStick(Bind* b, File& f) const
 {
     // Only one binding per line
 
     int joystickNum;
-    if (!fr.nextNumber(joystickNum))
+    if (!f.nextNumber(joystickNum))
     {
         WLOG("Invalid joystick number\n");
         return;
     }
 
     std::string componentName;
-    if (!fr.nextWord(componentName)) 
+    if (!f.nextWord(componentName)) 
     {
         WLOG("Invalid joystick event: "<<componentName);
         return;
     }
 
-    bool rev = FileReader::isNegative(componentName);
+    bool rev = is_negative(componentName);
 
     auto cpntIt = mJoyStickComponentNames.find(componentName);
     if (cpntIt == mJoyStickComponentNames.end())
@@ -500,7 +522,7 @@ void SimpleSerializer::addJoyStick(Bind* b, FileReader& fr) const
     }
 
     int componentId;
-    if (!fr.nextNumber(componentId))
+    if (!f.nextNumber(componentId))
     {
         WLOG("Invalid joystick component id\n");
         return;
@@ -510,23 +532,71 @@ void SimpleSerializer::addJoyStick(Bind* b, FileReader& fr) const
 }
 
 
+void SimpleSerializer::saveBinding(const NamedBindingMap& bs)
+{
+    File f(mPath+g_map_filename);
+    for (auto& pair : bs.map)
+    {
+        const std::string& name = pair.first;
+        Bind* b = pair.second;
+
+        for (auto& evt : b->getKeyEvents())
+            f << name << " keyboard " << keyEventToString(evt) << '\n';;
+        for (auto& evt : b->getMouseEvents())
+            f << name << " mouse " << mouseEventToString(evt) << '\n';
+        for (auto& evt : b->getJoyStickEvents())
+            f << name << " joystick " << joyStickEventToString(evt) << '\n';
+    }
+}
+
+
 void SimpleSerializer::loadConfig(Handler::Configuration& c)
 {
-    FileReader fr(mPath+g_conf_filename);
-    fr.parseKeyValuePair("mouse_sensivity_axis_x", c.mouseSensivityAxisX);
-    fr.parseKeyValuePair("mouse_sensivity_axis_y", c.mouseSensivityAxisY);
-    fr.parseKeyValuePair("mouse_smoothing", c.mouseSmoothing);
+    DO_CONFIG(readKeyValuePair, c);
 }
 
 
-void SimpleSerializer::saveBinding(const NamedBindingMap&)
+void SimpleSerializer::saveConfig(const Handler::Configuration& c)
 {
+    DO_CONFIG(writeKeyValuePair, c);
 }
 
 
-void SimpleSerializer::saveConfig(const Handler::Configuration&)
+std::string SimpleSerializer::keyEventToString(const InputEvent::Type& evt)
 {
+    std::stringstream ss;
+    if (InputEvent::getReverse(evt)) ss << '-';
+
+    unsigned mod = KeyEvent::getModifier(evt);
+    if (mod & OIS::Keyboard::Alt) ss << enum_to_string(mKeyModifierNames, OIS::Keyboard::Alt) << '+';
+    if (mod & OIS::Keyboard::Ctrl) ss << enum_to_string(mKeyModifierNames, OIS::Keyboard::Ctrl) << '+';
+    if (mod & OIS::Keyboard::Shift) ss << enum_to_string(mKeyModifierNames, OIS::Keyboard::Shift) << '+';
+
+    ss << enum_to_string(mKeyNames, KeyEvent::getKey(evt));
+
+    return ss.str();
 }
 
 
+std::string SimpleSerializer::mouseEventToString(const InputEvent::Type& evt)
+{
+    std::stringstream ss;
 
+    if (InputEvent::getReverse(evt)) ss << '-';
+    ss << enum_to_string(mMouseComponentNames, MouseEvent::getComponent(evt));
+
+    return ss.str();
+}
+
+
+std::string SimpleSerializer::joyStickEventToString(const InputEvent::Type& evt)
+{
+    std::stringstream ss;
+
+    ss << JoyStickEvent::getJoystickNumber(evt) << ' ';
+    if (InputEvent::getReverse(evt)) ss << '-';
+    ss << enum_to_string(mJoyStickComponentNames, JoyStickEvent::getComponent(evt)) << ' ';
+    ss << JoyStickEvent::getComponentId(evt);
+
+    return ss.str();
+}

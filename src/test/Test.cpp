@@ -3,8 +3,6 @@
 
 #include "TestUtils.h"
 
-#include <OISException.h>
-
 #include <iostream>
 #include <string>
 
