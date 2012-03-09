@@ -264,11 +264,11 @@ public:
     unsigned getId() { return mId; }
 
 protected:
-	bool buttonPressed(const OIS::JoyStickEvent& evt, int button);
-	bool buttonReleased(const OIS::JoyStickEvent& evt, int button);
-	bool axisMoved(const OIS::JoyStickEvent& evt, int axis);
-	bool povMoved(const OIS::JoyStickEvent& evt, int idx);
-    
+    bool buttonPressed(const OIS::JoyStickEvent& evt, int button);
+    bool buttonReleased(const OIS::JoyStickEvent& evt, int button);
+    bool axisMoved(const OIS::JoyStickEvent& evt, int axis);
+    bool povMoved(const OIS::JoyStickEvent& evt, int idx);
+
     Handler* mHandler;
     int mId;
     std::list<std::weak_ptr<OIS::JoyStickListener>> mListeners;
