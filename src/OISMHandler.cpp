@@ -288,7 +288,7 @@ void Handler::_init(unsigned long hWnd, const std::string& path, bool exclusive)
 void Handler::update()
 {
     mMouse->capture();
-    //smoothMouseCleanup();
+    smoothMouseCleanup();
     mKeyboard->capture();
     for (auto& pair : mJoySticks) pair.first->capture();
 }
