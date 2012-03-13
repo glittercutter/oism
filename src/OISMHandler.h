@@ -336,6 +336,9 @@ private:
 };
 
 
+typedef std::list<Bind::CallbackSharedPtr> CallbackList;
+
+
 struct NamedBindingMap
 {
     Bind* getBinding(const std::string& name, bool forUse = true);
