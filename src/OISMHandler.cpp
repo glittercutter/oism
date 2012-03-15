@@ -11,8 +11,6 @@
 
 using namespace oism;
 
-const char* g_log_filename = "oism_log";
-
 
 /*
 =====================
@@ -28,8 +26,8 @@ Bind* NamedBindingMap::getBinding(const std::string& name, bool forUse/* = true*
     auto it = map.find(name);
     if (it == map.end())
     {
-        LOG("New binding '" << name << "'.");
-        if (forUse) WLOG("Binding '" << name << " has no input");
+        ILog() << "New binding '" << name << "'";
+        if (forUse) WLog() << "Binding: '" << name << "' has no input";
         it = map.insert(std::make_pair(name, new Bind())).first;
     }
     return it->second;
@@ -266,17 +264,11 @@ Handler::~Handler()
     _saveConfig();
     destroyOIS();
     delete mSerializer;
-#ifdef OISM_ENABLE_LOG_FILE
-    LOG_FILE.close();
-#endif // OISM_ENABLE_LOG_FILE
 }
 
 
 void Handler::_init(unsigned long hWnd, const std::string& path, bool exclusive)
 {
-#ifdef OISM_ENABLE_LOG_FILE
-    LOG_FILE.open(path+g_log_filename);
-#endif // OISM_ENABLE_LOG_FILE
     mHWnd = hWnd;
     _loadBinding();
     _loadConfig();
@@ -322,11 +314,11 @@ void Handler::createOIS(bool exclusive/* = true*/)
     }
 
     mOIS = OIS::InputManager::createInputSystem(pl);
-    LOG(mOIS->inputSystemName());
+    ILog() << mOIS->inputSystemName();
 
-    LOG("List of available device:")
+    ILog() << "Available device:";
     for (auto& dev : mOIS->listFreeDevices())
-        LOG("  - "<<convertOISDeviceTypeToString(dev.first)<<" -- "<<dev.second);
+        ILog() << "  - "<<convertOISDeviceTypeToString(dev.first)<<" ("<<dev.second<<")";
 
     // Create devices
 
@@ -343,7 +335,7 @@ void Handler::createOIS(bool exclusive/* = true*/)
     }
 
     unsigned numJoystick = mOIS->getNumberOfDevices(OIS::OISJoyStick);
-    if (numJoystick)LOG("Creating joystick:");
+    if (numJoystick) ILog() << "Creating joystick:";
 
     for (int i = 0; i < mOIS->getNumberOfDevices(OIS::OISJoyStick); i++)
     {
@@ -355,13 +347,13 @@ void Handler::createOIS(bool exclusive/* = true*/)
         js->setEventCallback(mJoySticks.back().second);
 
         // List specs
-        LOG("  - Joystick "<<i<<" -- Vendor: "<<js->vendor());
-        LOG("    - Unknown: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Unknown));
-        LOG("    - Button: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Button));
-        LOG("    - Axis: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Axis));
-        LOG("    - Slider: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Slider));
-        LOG("    - POV: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_POV));
-        LOG("    - Movement capture: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Vector3));
+        ILog()<<"  - Joystick "<<i<<" -- Vendor: "<<js->vendor();
+        ILog()<<"    - Unknown: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Unknown);
+        ILog()<<"    - Button: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Button);
+        ILog()<<"    - Axis: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Axis);
+        ILog()<<"    - Slider: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Slider);
+        ILog()<<"    - POV: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_POV);
+        ILog()<<"    - Movement capture: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Vector3);
     }
 }
 
@@ -383,7 +375,7 @@ void Handler::destroyOIS()
 
 void Handler::setMouseLimit(int w, int h)
 {
-    LOG("Setting mouse limit: width="<<w<<" height="<<h); 
+    ILog()<<"Setting mouse limit: width="<<w<<" height="<<h; 
 	mMouse->getMouseState().width = w;
 	mMouse->getMouseState().height = h;
 }
@@ -404,13 +396,13 @@ void Handler::_saveBinding()
 
 void Handler::_loadConfig()
 {
-    mSerializer->loadConfig(mConfig);
+    mSerializer->loadConfig(&mConfig);
 }
 
 
 void Handler::_saveConfig()
 {
-    mSerializer->saveConfig(mConfig);
+    mSerializer->saveConfig(&mConfig);
 }
 
 
@@ -452,7 +444,7 @@ void Handler::registerJoyStickListener(std::weak_ptr<OIS::JoyStickListener> lnr,
     if (id >= 0 && mJoySticks.size() > (unsigned)id)
         mJoySticks[id].second->addListener(lnr);
     else
-        WLOG(__FUNCTION__<<" Invalid joystick number");
+        WLog() << __FUNCTION__<<" Invalid joystick number";
 }
 
 

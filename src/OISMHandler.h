@@ -4,6 +4,7 @@
 #pragma once 
 
 #include "mm/cache_map.hpp"
+#include "OISMfwdcl.h"
 
 #include <OISEvents.h>
 #include <OISInputManager.h>
@@ -21,18 +22,13 @@
 #include <string>
 #include <unordered_map>
 
+
 // NOTE: Bit shifting assume at least 32bits, little-endian machine
 static_assert(sizeof(unsigned) >= 4, "unsigned type need to be at least 4 bytes wide");
 
-#include "OISMLog.h"
 
 namespace oism
 {
-
-// Forward decl
-class Bind;
-class Handler;
-class Serializer;
 
 
 struct InputEvent
@@ -465,9 +461,9 @@ public:
     virtual ~Serializer() {}
 
     virtual void loadBinding(NamedBindingMap&) = 0;
-    virtual void loadConfig(Handler::Configuration&) = 0;
+    virtual void loadConfig(Handler::Configuration*) = 0;
     virtual void saveBinding(const NamedBindingMap&) = 0;
-    virtual void saveConfig(const Handler::Configuration&) = 0;
+    virtual void saveConfig(Handler::Configuration*) = 0;
 
 protected:
     std::string mPath;

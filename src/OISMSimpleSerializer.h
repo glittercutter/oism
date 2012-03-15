@@ -7,10 +7,13 @@
 #include <map>
 #include <vector>
 
+
 namespace oism
 {
 
+
 typedef std::unordered_map<std::string, unsigned> NamedEnum;
+
 
 struct File
 {
@@ -25,6 +28,19 @@ struct File
     bool readKeyValuePair(const std::string& key, int& value);
     bool readKeyValuePair(const std::string& key, float& value);
     bool readKeyValuePair(const std::string& key, std::string& value);
+
+    enum KeyValueOperation
+    {
+        KVO_Write,
+        KVO_Read
+    };
+
+    template <class T>
+    void keyValuePair(const std::string& key, T& value, KeyValueOperation oper)
+    {
+        if (oper == KVO_Write) writeKeyValuePair(key, value);
+        else readKeyValuePair(key, value);
+    }
 
     template <class T>
     void writeKeyValuePair(const std::string& key, const T& value)
@@ -56,9 +72,9 @@ public:
     SimpleSerializer(const std::string& path);
     
     virtual void loadBinding(NamedBindingMap&);
-    virtual void loadConfig(Handler::Configuration&);
+    virtual void loadConfig(Handler::Configuration*);
     virtual void saveBinding(const NamedBindingMap&);
-    virtual void saveConfig(const Handler::Configuration&);
+    virtual void saveConfig(Handler::Configuration*);
 
 protected:
     void addKey(Bind* b, File& fr) const;
@@ -69,6 +85,8 @@ protected:
     std::string mouseEventToString(const InputEvent::Type& evt);
     std::string joyStickEventToString(const InputEvent::Type& evt);
 
+    void doConfig(Handler::Configuration* c, File::KeyValueOperation oper);
+
     NamedEnum mKeyNames;
     NamedEnum mKeyModifierNames;
     NamedEnum mMouseComponentNames;
@@ -78,5 +96,6 @@ protected:
     std::vector<std::string> mMouseDeviceNames;
     std::vector<std::string> mJoyStickDeviceNames;
 };
+
 
 } // oism

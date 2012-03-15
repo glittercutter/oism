@@ -1,32 +1,59 @@
 #pragma once
 
+
 #ifdef OISM_ENABLE_LOG
 
-#include <iostream>
-#include <fstream>
 
-#ifdef OISM_ENABLE_LOG_FILE
-static std::ofstream LOG_FILE;
-#define LOG_WRITE(_STR) LOG_FILE << _STR; std::cout << _STR;
-#else // OISM_ENABLE_LOG_FILE
-#define LOG_WRITE(_STR) std::cout << _STR;
-#endif // OISM_ENABLE_LOG_FILE
+#include <sstream>
+#include <functional>
 
-#define LOG_IMP(_LINE) \
-{ \
-    std::stringstream ss; \
-    ss << "oism -- " << _LINE << std::endl; \
-    LOG_WRITE(ss.str()); \
-}
+namespace oism
+{
 
-#define LOG(_LINE) LOG_IMP("LOG: " << _LINE)
-#define WLOG(_LINE) LOG_IMP("WARNING: " << _LINE)
-#define ELOG(_LINE) LOG_IMP("ERROR: " << _LINE << " -- " __FILE__ << " " << __FUNCTION__ << " " << __LINE__)
+struct Logger
+{
+    template<class Val> Logger& operator<<(const Val& val)
+    {
+        ss << val;
+        return *this;
+    }
+    
+    operator std::string () const
+    {
+        return ss.str().c_str();
+    }
+
+    Logger() {ss.str("");}
+    virtual ~Logger() = 0;
+
+    static std::stringstream ss; // keep the buffer and clear it in ctor for efficiency
+    typedef std::function<void(const std::string&)> Callback;
+    static Callback callback;
+};
+
+struct ILog : public Logger { ~ILog(); };
+struct ELog : public Logger { ~ELog(); };
+struct WLog : public Logger { ~WLog(); };
+
+} // namespace oism
+
 
 #else // OISM_ENABLE_LOG
 
-#define LOG(_LINE) ;
-#define WLOG(_LINE) ;
-#define ELOG(_LINE) ;
+
+namespace oism
+{
+
+// Dummy for disabled logging
+struct Logger
+{
+    template<class Val> Logger& operator<<(const Val& val) {return *this;}
+};
+struct ILog : public Logger {};
+struct ELog : public Logger {};
+struct WLog : public Logger {};
+
+} // namespace oism
+
 
 #endif // OISM_ENABLE_LOG

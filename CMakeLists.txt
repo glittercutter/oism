@@ -4,6 +4,7 @@ project (test)
 set (SRC
     src/OISMHandler.cpp
     src/OISMHandlerUgly.cpp
+    src/OISMLog.cpp
     src/OISMSimpleSerializer.cpp
     src/test/TestUtils.cpp
     )
@@ -37,13 +38,9 @@ endif ()
 add_definitions (-std=c++0x -Wall)
 
 set (OISM_ENABLE_LOG "FALSE" CACHE BOOL "OISM use log")
-set (OISM_ENABLE_LOG_FILE "FALSE" CACHE BOOL "OISM use log file")
 
 if (OISM_ENABLE_LOG)
     add_definitions(-DOISM_ENABLE_LOG)
-endif ()
-if (OISM_ENABLE_LOG_FILE)
-    add_definitions(-DOISM_ENABLE_LOG_FILE)
 endif ()
 
 add_executable (test ${SRC} src/test/Test.cpp)

@@ -10,15 +10,6 @@
 
 using namespace oism;
 
-#define WLOG_FILE(_LINE) WLOG("In file '"<<filename<<"', "<<_LINE)
-
-#define DO_CONFIG(_FUNC, _C) \
-{ \
-    File file(mPath+g_conf_filename); \
-    file._FUNC("mouse_sensivity_axis_x", _C.mouseSensivityAxisX); \
-    file._FUNC("mouse_sensivity_axis_y", _C.mouseSensivityAxisY); \
-    file._FUNC("mouse_smoothing", _C.mouseSmoothing); \
-} \
 
 const char* g_map_filename = "inputmap";
 const char* g_conf_filename = "inputconf";
@@ -45,7 +36,7 @@ std::string enum_to_string(const NamedEnum& m, unsigned v)
     auto it = reverse_map_search(m, v);
     if (it == m.end()) 
     {
-        WLOG("Invalid enum: " << v);
+        WLog() << "Invalid enum: " << v;
         return "__INVALID__";
     }
 
@@ -99,7 +90,7 @@ File::File(const std::string& filename)
 :   fs(filename), filename(filename), wend(0), lineNum(0)
 {
     if (!fs.is_open())
-        ELOG("Error opening file: " << filename);
+        ELog() << "Error opening file: " << filename;
 } 
 
 bool File::isOpen()
@@ -131,7 +122,7 @@ int File::nextNumber(int& num)
     }
     catch (const std::invalid_argument& e)
     {
-        WLOG_FILE("line:"<<lineNum<<" -- Expected a number:"<<str);
+        WLog()<<"File: "<<filename<<" On line:"<<lineNum<<" -- Expected a number:"<<str;
     }
     return 0;
 }
@@ -160,7 +151,7 @@ std::string File::_findKey(const std::string& key)
         if (!line.compare(start, end - start, key))
             return line.substr(end);
     }
-    WLOG_FILE("key not found '"<<key<<"'");
+    WLog()<<"File: "<<filename<<" Key not found '"<<key<<"'";
     return "";
 }
 
@@ -175,7 +166,7 @@ bool File::readKeyValuePair(const std::string& key, int& value)
     }
     catch (const std::invalid_argument& e)
     {
-        WLOG_FILE("integer expected for key: '"<<key<<"'");
+        WLog()<<"File: "<<filename<<" Integer expected for key: '"<<key<<"'";
     }
     return 0;
 }
@@ -191,7 +182,7 @@ bool File::readKeyValuePair(const std::string& key, float& value)
     }
     catch (const std::invalid_argument& e)
     {
-        WLOG_FILE("floating point number expected for key: '"<<key<<"'");
+        WLog()<<"File: "<<filename<<" Floating point number expected for key: '"<<key<<"'";
     }
     return 0;
 }
@@ -211,24 +202,15 @@ SimpleSerializer
 */
 
 
-#define OIS_KEY_COUNT 145
-#define OIS_KEYMOD_COUNT 3
-#define MOUSE_CPNT_COUNT 10
-#define JOYSTICK_CPNT_COUNT 5
-#define KEYBOARD_DEVNAME_COUNT 5
-#define MOUSE_DEVNAME_COUNT 3
-#define JOYSTICK_DEVNAME_COUNT 3
-
-
 SimpleSerializer::SimpleSerializer(const std::string& path)
 :   Serializer(path),
-    mKeyNames(OIS_KEY_COUNT),
-    mKeyModifierNames(OIS_KEYMOD_COUNT),
-    mMouseComponentNames(MOUSE_CPNT_COUNT),
-    mJoyStickComponentNames(JOYSTICK_CPNT_COUNT),
-    mKeyboardDeviceNames(KEYBOARD_DEVNAME_COUNT),
-    mMouseDeviceNames(MOUSE_DEVNAME_COUNT),
-    mJoyStickDeviceNames(JOYSTICK_DEVNAME_COUNT)
+    mKeyNames(145),
+    mKeyModifierNames(3),
+    mMouseComponentNames(10),
+    mJoyStickComponentNames(5),
+    mKeyboardDeviceNames(5),
+    mMouseDeviceNames(3),
+    mJoyStickDeviceNames(3)
 
 {
     mKeyNames["escape"] = OIS::KC_ESCAPE;
@@ -428,7 +410,7 @@ void SimpleSerializer::loadBinding(NamedBindingMap& map)
         if (linear_search(mKeyboardDeviceNames, devName)) addKey(b, fr);
         else if (linear_search(mMouseDeviceNames, devName)) addMouse(b, fr);
         else if (linear_search(mJoyStickDeviceNames, devName)) addJoyStick(b, fr);
-        else WLOG("Invalid device name: "<<devName);
+        else WLog() << "Invalid device name: "<<devName;
     }
 }
 
@@ -467,7 +449,7 @@ void SimpleSerializer::addKey(Bind* b, File& fr) const
                 continue;
             }
 
-            WLOG("Invalid key name:"<<keyName);
+            WLog() << "Invalid key name:"<<keyName;
         }
         b->addKeyEvent(KeyEvent::create(key, mod, rev));
     }
@@ -485,7 +467,7 @@ void SimpleSerializer::addMouse(Bind* b, File& f) const
         auto it = mMouseComponentNames.find(word);
         if (it == mMouseComponentNames.end())
         {
-            WLOG("Invalid mouse event name: "<<word);
+            WLog() << "Invalid mouse event name: "<<word;
             continue;
         }
 
@@ -501,14 +483,14 @@ void SimpleSerializer::addJoyStick(Bind* b, File& f) const
     int joystickNum;
     if (!f.nextNumber(joystickNum))
     {
-        WLOG("Invalid joystick number\n");
+        WLog() << "Invalid joystick number\n";
         return;
     }
 
     std::string componentName;
     if (!f.nextWord(componentName)) 
     {
-        WLOG("Invalid joystick event: "<<componentName);
+        WLog() << "Invalid joystick event: " << componentName;
         return;
     }
 
@@ -517,14 +499,14 @@ void SimpleSerializer::addJoyStick(Bind* b, File& f) const
     auto cpntIt = mJoyStickComponentNames.find(componentName);
     if (cpntIt == mJoyStickComponentNames.end())
     {
-        WLOG("Invalid joystick component: "<<componentName);
+        WLog() << "Invalid joystick component: " << componentName;
         return;
     }
 
     int componentId;
     if (!f.nextNumber(componentId))
     {
-        WLOG("Invalid joystick component id\n");
+        WLog() << "Invalid joystick component id";
         return;
     }
 
@@ -550,15 +532,24 @@ void SimpleSerializer::saveBinding(const NamedBindingMap& bs)
 }
 
 
-void SimpleSerializer::loadConfig(Handler::Configuration& c)
+void SimpleSerializer::doConfig(Handler::Configuration* c, File::KeyValueOperation oper)
 {
-    DO_CONFIG(readKeyValuePair, c);
+    File file(mPath+g_conf_filename);
+    file.keyValuePair("mouse_sensivity_axis_x", c->mouseSensivityAxisX, oper);
+    file.keyValuePair("mouse_sensivity_axis_y", c->mouseSensivityAxisY, oper);
+    file.keyValuePair("mouse_smoothing", c->mouseSmoothing, oper);
 }
 
 
-void SimpleSerializer::saveConfig(const Handler::Configuration& c)
+void SimpleSerializer::loadConfig(Handler::Configuration* c)
 {
-    DO_CONFIG(writeKeyValuePair, c);
+    doConfig(c, File::KeyValueOperation::KVO_Read);
+}
+
+
+void SimpleSerializer::saveConfig(Handler::Configuration* c)
+{
+    doConfig(c, File::KeyValueOperation::KVO_Write);
 }
 
 

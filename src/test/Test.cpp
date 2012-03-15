@@ -1,4 +1,5 @@
 #include "../OISMHandler.h"
+#include "../OISMLog.h"
 #include "../OISMSimpleSerializer.h"
 
 #include "TestUtils.h"
@@ -9,6 +10,8 @@
 
 int main(int argc, char** argv)
 {
+    oism::Logger::callback = [](const std::string& msg){std::cout<<"oism | "<<msg<<std::endl;};
+
     auto& input = oism::Handler::getInstance();
     input.init<oism::SimpleSerializer>(testutils::createWindow(), "../");
 
