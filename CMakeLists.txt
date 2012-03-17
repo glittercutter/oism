@@ -37,8 +37,7 @@ endif ()
 
 add_definitions (-std=c++0x -Wall)
 
-set (OISM_ENABLE_LOG "FALSE" CACHE BOOL "OISM use log")
-
+set (OISM_ENABLE_LOG "TRUE" CACHE BOOL "OISM use log")
 if (OISM_ENABLE_LOG)
     add_definitions(-DOISM_ENABLE_LOG)
 endif ()
