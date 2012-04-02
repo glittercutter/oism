@@ -10,23 +10,23 @@
 
 int main(int argc, char** argv)
 {
-    auto& input = oism::Handler::getInstance();
-    input.init<oism::SimpleSerializer>(testutils::createWindow(), "../");
+    auto input = new oism::Handler(testutils::createWindow());
+    input->serialize<oism::SimpleSerializer>("../");
 
-    auto cbSharedPointer = input.callback("quit", [](){testutils::isRunning = false;});
-    auto walkBinding = input.getBinding("walk");
+    auto cbSharedPointer = input->callback("quit", [](){testutils::isRunning = false;});
+    auto walkBinding = input->getBinding("walk");
 
     // Dummy bindings
-    auto test0Binding = input.getBinding("test0");
-    auto test1Binding = input.getBinding("test1");
-    auto test2Binding = input.getBinding("test2");
-    auto test3Binding = input.getBinding("test3");
-    auto test4Binding = input.getBinding("test4");
-    auto test5Binding = input.getBinding("test5");
-    auto test6Binding = input.getBinding("test6");
-    auto test7Binding = input.getBinding("test7");
-    auto test8Binding = input.getBinding("test8");
-    auto test9Binding = input.getBinding("test9");
+    auto test0Binding = input->getBinding("test0");
+    auto test1Binding = input->getBinding("test1");
+    auto test2Binding = input->getBinding("test2");
+    auto test3Binding = input->getBinding("test3");
+    auto test4Binding = input->getBinding("test4");
+    auto test5Binding = input->getBinding("test5");
+    auto test6Binding = input->getBinding("test6");
+    auto test7Binding = input->getBinding("test7");
+    auto test8Binding = input->getBinding("test8");
+    auto test9Binding = input->getBinding("test9");
 
     using namespace std::chrono;
 
@@ -35,7 +35,7 @@ int main(int argc, char** argv)
 
     while (testutils::isRunning)
     {
-        input.update();
+        input->update();
         ++iter;
     }
 
@@ -43,7 +43,7 @@ int main(int argc, char** argv)
     std::cout << duration_cast<nanoseconds>(diff).count() / (double)iter << " nanoseconds / iteration" << std::endl;
     
     // Cleanup
-    delete &input;
+    delete input;
     testutils::destroyWindow();
 
     std::cout << std::endl << "Terminated normally" << std::endl;

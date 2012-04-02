@@ -3,7 +3,7 @@
 namespace testutils
 {
 
-unsigned createWindow();
+unsigned long createWindow();
 void destroyWindow();
 extern bool isRunning;
 

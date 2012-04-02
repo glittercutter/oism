@@ -101,7 +101,7 @@ void checkMacEvents()
 #endif
 
 
-unsigned testutils::createWindow()
+unsigned long testutils::createWindow()
 {
 #if defined OIS_WIN32_PLATFORM
     //Create a capture window for Input Grabbing

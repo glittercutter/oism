@@ -41,12 +41,12 @@ Bind
 */
 
 
-void Bind::setValue(float val)
+void Bind::setValue(Handler* handler, float val)
 {
     float oldVal = mValue;
     mValue = val;
 
-    float high = _getMaxValue();
+    float high = _getMaxValue(handler);
     if (fabs(high) > fabs(mValue)) mValue = high;
 
     if (oldVal == 0.f)
@@ -117,12 +117,11 @@ void Bind::removeJoyStickEvent(InputEvent::Type evt)
 }
 
 
-float Bind::_getMaxValue() const
+float Bind::_getMaxValue(Handler* handler) const
 {
     float high = 0.f;
-    Handler& handler = Handler::getInstance();
-    auto kb = handler.getKeyboard();
-    auto mouse = handler.getMouse();
+    auto kb = handler->getKeyboard();
+    auto mouse = handler->getMouse();
 
     // Key on/off
     for (auto evt : mKeyEvents)
@@ -155,7 +154,7 @@ float Bind::_getMaxValue() const
 
     // Joystick
     for (auto& evt : mJoyStickEvents)
-        if (float tmp = handler.getJoyStickValue(evt))
+        if (float tmp = handler->getJoyStickValue(evt))
            if (std::fabs(tmp) > std::fabs(high)) high = tmp;
 
     return high;
@@ -245,17 +244,13 @@ Handler
 */
 
 
-Handler& Handler::getInstance()
-{
-    static Handler* instance = new Handler();
-    return *instance;
-}
-
-
-Handler::Handler()
+Handler::Handler(unsigned long windowID, bool exclusive/* = true*/)
 :   mMouseSmoothLastX(0.f), mMouseSmoothLastY(0.f),
-    mMouseSmoothUpdatedX(false), mMouseSmoothUpdatedY(false)
-{}
+    mMouseSmoothUpdatedX(false), mMouseSmoothUpdatedY(false),
+    mSerializer(0), mWindowID(windowID)
+{
+    createOIS(exclusive);
+}
 
 
 Handler::~Handler()
@@ -264,16 +259,6 @@ Handler::~Handler()
     _saveConfig();
     destroyOIS();
     delete mSerializer;
-}
-
-
-void Handler::_init(unsigned long hWnd, const std::string& path, bool exclusive)
-{
-    mHWnd = hWnd;
-    _loadBinding();
-    _loadConfig();
-    _buildBindingListMaps();
-    createOIS(exclusive);
 }
 
 
@@ -296,7 +281,7 @@ void Handler::setExclusive(bool exclusive/* = true*/)
 void Handler::createOIS(bool exclusive/* = true*/)
 {
     OIS::ParamList pl;
-    pl.insert({"WINDOW", std::to_string(mHWnd)});
+    pl.insert({"WINDOW", std::to_string(mWindowID)});
     
     if (!exclusive)
     {
@@ -510,7 +495,7 @@ void Handler::setBindingValue(InputEventBindingListMap& bindings, unsigned evt, 
     auto it = bindings.find(evt);
     if (it == bindings.end()) return;
     for (auto binding : it->second)
-        binding->setValue(value);
+        binding->setValue(this, value);
 }
 
 

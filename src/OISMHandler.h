@@ -314,11 +314,11 @@ public:
     const InputEventList& getJoyStickEvents() {return mJoyStickEvents;}
 
     // Return farthest value from zero -/+
-    float _getMaxValue() const;
+    float _getMaxValue(Handler*) const;
 
 protected:
     // Used by friend class 'Handler'
-    void setValue(float);
+    void setValue(Handler*, float);
     InputEventList mKeyEvents;
     InputEventList mMouseEvents;
     InputEventList mJoyStickEvents;
@@ -349,17 +349,24 @@ class Handler : public OIS::MouseListener, public OIS::KeyListener
 friend class JoyStickListener;
 
 public:
-    static Handler& getInstance();
+    Handler(unsigned long windowID, bool exclusive = true);
+    virtual ~Handler();
 
     template<typename Serializer_t>
-    void init(unsigned long hWnd, const std::string& path, bool exclusive = true)
+    void serialize(const std::string& path)
     {
         mSerializer = new Serializer_t(path);
-        _init(hWnd, path, exclusive);
+        _loadBinding();
+        _loadConfig();
+        _buildBindingListMaps();
     }
-    void _init(unsigned long hWnd, const std::string& path, bool exclusive);
 
-    virtual ~Handler();
+    void setMouseLimit(int w, int h);
+    void setExclusive(bool exclusive = true);
+
+    void update();
+    Bind::CallbackSharedPtr callback(const std::string& name, const Bind::Callback& cb, unsigned type = Bind::CT_ON_POSITIVE);
+    Bind* getBinding(const std::string& name, bool forUse = true);
 
     void registerKeyListener(std::weak_ptr<OIS::KeyListener>);
     void registerMouseListener(std::weak_ptr<OIS::MouseListener>);
@@ -368,12 +375,6 @@ public:
     OIS::Keyboard* getKeyboard() { return mKeyboard; }
     OIS::Mouse* getMouse() { return mMouse; }
     float getJoyStickValue(unsigned int) const;
-
-    void update();
-    Bind::CallbackSharedPtr callback(const std::string& name, const Bind::Callback& cb, unsigned type = Bind::CT_ON_POSITIVE);
-    Bind* getBinding(const std::string& name, bool forUse = true);
-    void setMouseLimit(int w, int h);
-    void setExclusive(bool exclusive = true);
 
     void _loadBinding();
     void _saveBinding();
@@ -402,8 +403,7 @@ protected:
     typedef std::deque<Bind*> BindingList;
     typedef mm::cache_map<InputEvent::Type, BindingList> InputEventBindingListMap;
 
-    Handler();
-    Handler(const Handler&); // No copying
+    Handler(const Handler&); // Not implemented == No copy
 
     void createOIS(bool exclusive = true);
     void destroyOIS();
@@ -436,20 +436,19 @@ protected:
     NamedBindingMap mBindings;
 
     OIS::InputManager* mOIS;
-
     OIS::Mouse* mMouse;
     OIS::Keyboard* mKeyboard;
     std::vector<std::pair<OIS::JoyStick*, JoyStickListener*>> mJoySticks;
     std::deque<std::weak_ptr<OIS::KeyListener>> mKeyListeners;
     std::deque<std::weak_ptr<OIS::MouseListener>> mMouseListeners;
 
-    Serializer* mSerializer;
     Configuration mConfig;
-
-    unsigned long mHWnd;
 
     float mMouseSmoothLastX, mMouseSmoothLastY;
     bool mMouseSmoothUpdatedX, mMouseSmoothUpdatedY;
+
+    Serializer* mSerializer;
+    unsigned long mWindowID;
 };
 
 

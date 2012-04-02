@@ -26,7 +26,8 @@ struct Logger
     Logger() {ss.str("");}
     virtual ~Logger() = 0;
 
-    static std::stringstream ss; // keep the buffer and clear it in ctor for efficiency
+    static std::stringstream ss; // Keep the buffer and clear it in ctor for efficiency
+
     typedef std::function<void(const std::string&)> Callback;
     static Callback callback;
 };
