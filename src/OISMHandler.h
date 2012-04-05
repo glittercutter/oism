@@ -31,6 +31,17 @@ namespace oism
 {
 
 
+class NonCopyable
+{
+protected:
+    NonCopyable() {}
+    ~NonCopyable() {}
+private:
+    NonCopyable & operator=(const NonCopyable&);
+    NonCopyable(const NonCopyable&);
+};
+
+
 struct InputEvent
 {
     // Byte number start from the right.
@@ -344,7 +355,7 @@ struct NamedBindingMap
 };
 
 
-class Handler : public OIS::MouseListener, public OIS::KeyListener
+class Handler : NonCopyable, public OIS::MouseListener, public OIS::KeyListener
 {
 friend class JoyStickListener;
 
@@ -402,8 +413,6 @@ public:
 protected:
     typedef std::deque<Bind*> BindingList;
     typedef mm::cache_map<InputEvent::Type, BindingList> InputEventBindingListMap;
-
-    Handler(const Handler&); // Not implemented == No copy
 
     void createOIS(bool exclusive = true);
     void destroyOIS();
