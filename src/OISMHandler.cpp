@@ -19,8 +19,7 @@ NamedBindingMap
 */
 
 
-// NOTE: Emit a warning if you want to use(not constructing)
-// a non-existing binding.
+// NOTE: Warn you if using non-existing binding, an empty one will be created.
 Bind* NamedBindingMap::getBinding(const std::string& name, bool forUse/* = true*/)
 {
     auto it = map.find(name);
@@ -168,23 +167,14 @@ JoyStickListener
 */
 
 
-void JoyStickListener::addListener(std::weak_ptr<OIS::JoyStickListener> lnr)
-{
-    mListeners.push_back(lnr);
-}
+void JoyStickListener::addListener(OIS::JoyStickListener* lnr) { mListeners.insert(lnr); }
+void JoyStickListener::removeListener(OIS::JoyStickListener* lnr) { mListeners.erase(lnr); }
 
 
 bool JoyStickListener::buttonPressed(const OIS::JoyStickEvent& evt, int button)
 {
     mHandler->buttonPressed(button, this);
-
-    for (auto it = mListeners.begin(); it != mListeners.end(); it++)
-    {
-        std::shared_ptr<OIS::JoyStickListener> lnr = it->lock();
-        if (!lnr.get()) it = mListeners.erase(it); // Listener no longer exist
-        else lnr->buttonPressed(evt, button);
-    }
-
+    for (auto lnr : mListeners) lnr->buttonPressed(evt, button);
     return true;
 }
 
@@ -192,32 +182,16 @@ bool JoyStickListener::buttonPressed(const OIS::JoyStickEvent& evt, int button)
 bool JoyStickListener::buttonReleased(const OIS::JoyStickEvent& evt, int button)
 {
     mHandler->buttonReleased(button, this);
-
-    for (auto it = mListeners.begin(); it != mListeners.end(); it++)
-    {
-        std::shared_ptr<OIS::JoyStickListener> lnr = it->lock();
-        if (!lnr.get()) it = mListeners.erase(it); // Listener no longer exist
-        else lnr->buttonReleased(evt, button);
-    }
-
+    for (auto lnr : mListeners) lnr->buttonReleased(evt, button);
     return true;
 }
 
 
 bool JoyStickListener::axisMoved(const OIS::JoyStickEvent& evt, int axis)
 {
-    mHandler->axisMoved(
-        axis,
-        JoyStickEvent::normalizeAxisValue(evt.state.mAxes[axis].abs),
-        this);
-
-    for (auto it = mListeners.begin(); it != mListeners.end(); it++)
-    {
-        std::shared_ptr<OIS::JoyStickListener> lnr = it->lock();
-        if (!lnr.get()) it = mListeners.erase(it); // Listener no longer exist
-        else lnr->axisMoved(evt, axis);
-    }
-    
+    mHandler->axisMoved(axis,
+        JoyStickEvent::normalizeAxisValue(evt.state.mAxes[axis].abs), this);
+    for (auto lnr : mListeners) lnr->axisMoved(evt, axis);
     return true;
 }
 
@@ -225,14 +199,7 @@ bool JoyStickListener::axisMoved(const OIS::JoyStickEvent& evt, int axis)
 bool JoyStickListener::povMoved(const OIS::JoyStickEvent& evt, int idx)
 {
     mHandler->povMoved(idx, evt.state.mPOV[idx].direction, this);
-
-    for (auto it = mListeners.begin(); it != mListeners.end(); it++)
-    {
-        std::shared_ptr<OIS::JoyStickListener> lnr = it->lock();
-        if (!lnr.get()) it = mListeners.erase(it); // Listener no longer exist
-        else lnr->povMoved(evt, idx);
-    }
-    
+    for (auto lnr : mListeners) lnr->povMoved(evt, idx);
     return true;
 }
 
@@ -247,7 +214,7 @@ Handler
 Handler::Handler(unsigned long windowID, bool exclusive/* = true*/)
 :   mMouseSmoothLastX(0.f), mMouseSmoothLastY(0.f),
     mMouseSmoothUpdatedX(false), mMouseSmoothUpdatedY(false),
-    mSerializer(0), mWindowID(windowID)
+    mSerializer(0), mWindowID(windowID), mIsExclusive(exclusive)
 {
     createOIS(exclusive);
 }
@@ -280,6 +247,8 @@ void Handler::setExclusive(bool exclusive/* = true*/)
 
 void Handler::createOIS(bool exclusive/* = true*/)
 {
+    mIsExclusive = exclusive;
+
     OIS::ParamList pl;
     pl.insert({"WINDOW", std::to_string(mWindowID)});
     
@@ -412,19 +381,12 @@ void Handler::_buildBindingListMaps()
 }
 
 
-void Handler::registerKeyListener(std::weak_ptr<OIS::KeyListener> lnr)
-{
-    mKeyListeners.push_back(lnr);
-}
+void Handler::addKeyListener(OIS::KeyListener* lnr) { mKeyListeners.insert(lnr); }
+void Handler::removeKeyListener(OIS::KeyListener* lnr) { mKeyListeners.erase(lnr); }
+void Handler::addMouseListener(OIS::MouseListener* lnr) { mMouseListeners.insert(lnr); }
+void Handler::removeMouseListener(OIS::MouseListener* lnr) { mMouseListeners.insert(lnr); }
 
-
-void Handler::registerMouseListener(std::weak_ptr<OIS::MouseListener> lnr)
-{
-    mMouseListeners.push_back(lnr);
-}
-
-
-void Handler::registerJoyStickListener(std::weak_ptr<OIS::JoyStickListener> lnr, int id)
+void Handler::addJoyStickListener(OIS::JoyStickListener* lnr, int id)
 {
     if (id >= 0 && mJoySticks.size() > (unsigned)id)
         mJoySticks[id].second->addListener(lnr);
@@ -432,10 +394,20 @@ void Handler::registerJoyStickListener(std::weak_ptr<OIS::JoyStickListener> lnr,
         WLog() << __FUNCTION__<<" Invalid joystick number";
 }
 
-
-Bind::CallbackSharedPtr Handler::callback(const std::string& name, const Bind::Callback& cb, unsigned type/* = Bind::CT_ON_POSITIVE*/)
+void Handler::removeJoyStickListener(OIS::JoyStickListener* lnr)
 {
-    return getBinding(name)->addCallback(type, Bind::CallbackSharedPtr(new Bind::Callback(cb)));   
+    for (auto js : mJoySticks)
+        js.second->removeListener(lnr);
+}
+
+
+Bind::CallbackSharedPtr Handler::callback(
+    const std::string& name,
+    const Bind::Callback& cb,
+    unsigned type/* = Bind::CT_ON_POSITIVE*/)
+{
+    return getBinding(name)->addCallback(
+        type, Bind::CallbackSharedPtr(new Bind::Callback(cb)));   
 }
 
 
@@ -567,14 +539,7 @@ bool Handler::mouseMoved(const OIS::MouseEvent& evt)
     setMouseValue(MouseEvent::CPNT_AXIS_X, x);
     setMouseValue(MouseEvent::CPNT_AXIS_Y, y);
 
-    // Notify listeners
-    for (auto it = mMouseListeners.begin(); it != mMouseListeners.end(); it++)
-    {
-        std::shared_ptr<OIS::MouseListener> lnr = it->lock();
-        if (!lnr.get()) it = mMouseListeners.erase(it);
-        else lnr->mouseMoved(evt);
-    }
-
+    for (auto lnr : mMouseListeners) lnr->mouseMoved(evt);
     return true;
 }
 
@@ -582,15 +547,7 @@ bool Handler::mouseMoved(const OIS::MouseEvent& evt)
 bool Handler::mousePressed(const OIS::MouseEvent& evt, OIS::MouseButtonID id)
 {
     setMouseValue((unsigned)id, 1.f);
-
-    // Notify listeners
-    for (auto it = mMouseListeners.begin(); it != mMouseListeners.end(); it++)
-    {
-        std::shared_ptr<OIS::MouseListener> lnr = it->lock();
-        if (!lnr.get()) it = mMouseListeners.erase(it);
-        else lnr->mousePressed(evt, id);
-    }
-
+    for (auto lnr : mMouseListeners) lnr->mousePressed(evt, id);
     return true;
 }
 
@@ -598,15 +555,7 @@ bool Handler::mousePressed(const OIS::MouseEvent& evt, OIS::MouseButtonID id)
 bool Handler::mouseReleased(const OIS::MouseEvent& evt, OIS::MouseButtonID id)
 {
     setMouseValue((unsigned)id, 0.f);
-
-    // Notify listeners
-    for (auto it = mMouseListeners.begin(); it != mMouseListeners.end(); it++)
-    {
-        std::shared_ptr<OIS::MouseListener> lnr = it->lock();
-        if (!lnr.get()) it = mMouseListeners.erase(it);
-        else lnr->mouseReleased(evt, id);
-    }
-
+    for (auto lnr : mMouseListeners) lnr->mouseReleased(evt, id);
     return true;
 }
 
@@ -619,15 +568,7 @@ bool Handler::mouseReleased(const OIS::MouseEvent& evt, OIS::MouseButtonID id)
 bool Handler::keyPressed(const OIS::KeyEvent& evt)
 {
     setKeyboardValue(evt, 1.f);
-
-    // Notify listeners
-    for (auto it = mKeyListeners.begin(); it != mKeyListeners.end(); it++)
-    {
-        std::shared_ptr<OIS::KeyListener> lnr = it->lock();
-        if (!lnr.get()) it = mKeyListeners.erase(it);
-        else lnr->keyPressed(evt);
-    }
-
+    for (auto lnr : mKeyListeners) lnr->keyPressed(evt);
     return true;
 }
 
@@ -635,15 +576,7 @@ bool Handler::keyPressed(const OIS::KeyEvent& evt)
 bool Handler::keyReleased(const OIS::KeyEvent& evt)
 {
     setKeyboardValue(evt, 0.f);
-
-    // Notify listeners
-    for (auto it = mKeyListeners.begin(); it != mKeyListeners.end(); it++)
-    {
-        std::shared_ptr<OIS::KeyListener> lnr = it->lock();
-        if (!lnr.get()) it = mKeyListeners.erase(it);
-        else lnr->keyReleased(evt);
-    }
-
+    for (auto lnr : mKeyListeners) lnr->keyReleased(evt);
     return true;
 }
 

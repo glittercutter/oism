@@ -17,6 +17,7 @@
 #include <functional>
 #include <list>
 #include <memory>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -267,7 +268,8 @@ public:
     JoyStickListener(Handler* handler, int id)
     :   mHandler(handler), mId(id) {}
 
-    void addListener(std::weak_ptr<OIS::JoyStickListener>);
+    void addListener(OIS::JoyStickListener*);
+    void removeListener(OIS::JoyStickListener*);
     unsigned getId() { return mId; }
 
 protected:
@@ -278,7 +280,7 @@ protected:
 
     Handler* mHandler;
     int mId;
-    std::list<std::weak_ptr<OIS::JoyStickListener>> mListeners;
+    std::set<OIS::JoyStickListener*> mListeners;
 };
 
 
@@ -374,14 +376,18 @@ public:
 
     void setMouseLimit(int w, int h);
     void setExclusive(bool exclusive = true);
+    bool getExclusive() { return mIsExclusive; }
 
     void update();
     Bind::CallbackSharedPtr callback(const std::string& name, const Bind::Callback& cb, unsigned type = Bind::CT_ON_POSITIVE);
     Bind* getBinding(const std::string& name, bool forUse = true);
 
-    void registerKeyListener(std::weak_ptr<OIS::KeyListener>);
-    void registerMouseListener(std::weak_ptr<OIS::MouseListener>);
-    void registerJoyStickListener(std::weak_ptr<OIS::JoyStickListener>, int id);
+    void addKeyListener(OIS::KeyListener*);
+    void removeKeyListener(OIS::KeyListener*);
+    void addMouseListener(OIS::MouseListener*);
+    void removeMouseListener(OIS::MouseListener*);
+    void addJoyStickListener(OIS::JoyStickListener*, int id);
+    void removeJoyStickListener(OIS::JoyStickListener*);
 
     OIS::Keyboard* getKeyboard() { return mKeyboard; }
     OIS::Mouse* getMouse() { return mMouse; }
@@ -448,8 +454,8 @@ protected:
     OIS::Mouse* mMouse;
     OIS::Keyboard* mKeyboard;
     std::vector<std::pair<OIS::JoyStick*, JoyStickListener*>> mJoySticks;
-    std::deque<std::weak_ptr<OIS::KeyListener>> mKeyListeners;
-    std::deque<std::weak_ptr<OIS::MouseListener>> mMouseListeners;
+    std::set<OIS::KeyListener*> mKeyListeners;
+    std::set<OIS::MouseListener*> mMouseListeners;
 
     Configuration mConfig;
 
@@ -458,6 +464,8 @@ protected:
 
     Serializer* mSerializer;
     unsigned long mWindowID;
+
+    bool mIsExclusive;
 };
 
 
