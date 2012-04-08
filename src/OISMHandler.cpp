@@ -2,14 +2,17 @@
 // Copyright (C) 2012 Sebastien Raymond
 
 #include "OISMHandler.h"
-#include "OISMLog.h"
 
 #include <algorithm>
 #include <cmath>
 #include <sstream>
 #include <iostream>
 
+
 using namespace oism;
+
+
+std::function<void(const std::string&)> oism::Logger = [](const std::string&){};
 
 
 /*
@@ -25,8 +28,8 @@ Bind* NamedBindingMap::getBinding(const std::string& name, bool forUse/* = true*
     auto it = map.find(name);
     if (it == map.end())
     {
-        ILog() << "New binding '" << name << "'";
-        if (forUse) WLog() << "Binding: '" << name << "' has no input";
+        Logger("New binding '"+name+"'");
+        if (forUse) Logger("WARNING - Binding: '"+name+"' has no input");
         it = map.insert(std::make_pair(name, new Bind())).first;
     }
     return it->second;
@@ -268,11 +271,11 @@ void Handler::createOIS(bool exclusive/* = true*/)
     }
 
     mOIS = OIS::InputManager::createInputSystem(pl);
-    ILog() << mOIS->inputSystemName();
+    Logger(mOIS->inputSystemName());
 
-    ILog() << "Available device:";
+    Logger("Available device:");
     for (auto& dev : mOIS->listFreeDevices())
-        ILog() << "  - "<<convertOISDeviceTypeToString(dev.first)<<" ("<<dev.second<<")";
+        Logger("  - "+convertOISDeviceTypeToString(dev.first)+" ("+dev.second+")");
 
     // Create devices
 
@@ -289,7 +292,7 @@ void Handler::createOIS(bool exclusive/* = true*/)
     }
 
     unsigned numJoystick = mOIS->getNumberOfDevices(OIS::OISJoyStick);
-    if (numJoystick) ILog() << "Creating joystick:";
+    if (numJoystick) Logger("Creating joystick:");
 
     for (int i = 0; i < mOIS->getNumberOfDevices(OIS::OISJoyStick); i++)
     {
@@ -301,13 +304,13 @@ void Handler::createOIS(bool exclusive/* = true*/)
         js->setEventCallback(mJoySticks.back().second);
 
         // List specs
-        ILog()<<"  - Joystick "<<i<<" -- Vendor: "<<js->vendor();
-        ILog()<<"    - Unknown: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Unknown);
-        ILog()<<"    - Button: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Button);
-        ILog()<<"    - Axis: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Axis);
-        ILog()<<"    - Slider: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Slider);
-        ILog()<<"    - POV: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_POV);
-        ILog()<<"    - Movement capture: "<<js->getNumberOfComponents(OIS::ComponentType::OIS_Vector3);
+        Logger("  - Joystick "+std::to_string(i)+" -- Vendor: "+js->vendor());
+        Logger("    - Unknown: "+js->getNumberOfComponents(OIS::ComponentType::OIS_Unknown));
+        Logger("    - Button: "+js->getNumberOfComponents(OIS::ComponentType::OIS_Button));
+        Logger("    - Axis: "+js->getNumberOfComponents(OIS::ComponentType::OIS_Axis));
+        Logger("    - Slider: "+js->getNumberOfComponents(OIS::ComponentType::OIS_Slider));
+        Logger("    - POV: "+js->getNumberOfComponents(OIS::ComponentType::OIS_POV));
+        Logger("    - Movement capture: "+js->getNumberOfComponents(OIS::ComponentType::OIS_Vector3));
     }
 }
 
@@ -329,7 +332,7 @@ void Handler::destroyOIS()
 
 void Handler::setMouseLimit(int w, int h)
 {
-    ILog()<<"Setting mouse limit: width="<<w<<" height="<<h; 
+    Logger("Setting mouse limit: width="+std::to_string(w)+" height="+std::to_string(h)); 
 	mMouse->getMouseState().width = w;
 	mMouse->getMouseState().height = h;
 }
@@ -391,7 +394,7 @@ void Handler::addJoyStickListener(OIS::JoyStickListener* lnr, int id)
     if (id >= 0 && mJoySticks.size() > (unsigned)id)
         mJoySticks[id].second->addListener(lnr);
     else
-        WLog() << __FUNCTION__<<" Invalid joystick number";
+        Logger(std::string(__func__)+" Invalid joystick number");
 }
 
 void Handler::removeJoyStickListener(OIS::JoyStickListener* lnr)

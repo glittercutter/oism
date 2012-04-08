@@ -32,6 +32,9 @@ namespace oism
 {
 
 
+extern std::function<void(const std::string&)> Logger;
+
+
 class NonCopyable
 {
 protected:
