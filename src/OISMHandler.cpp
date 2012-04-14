@@ -249,16 +249,14 @@ void Handler::update()
 
 void Handler::setExclusive(bool exclusive/* = true*/)
 {
-    Logger(std::to_string(exclusive));
     mInternalCallbacks.push([this,exclusive](){_setExclusive(exclusive);});
-    //mIsExclusive = exclusive; // Satisfy calls to getExclusive() before the callback is executed
+    mIsExclusive = exclusive; // Satisfy calls to getExclusive() before the callback is executed
 }
 
 
 // Internal callback
 void Handler::_setExclusive(bool exclusive)
 {
-    Logger(std::to_string(exclusive));
     // Copy joystick listeners with device ID
     std::unordered_map<int,std::set<OIS::JoyStickListener*>> jsIDLnr;
     for (auto p : mJoySticks)
@@ -284,7 +282,7 @@ void Handler::_setExclusive(bool exclusive)
     }
 
     // Restore mouse limit
-    //if (mMouse) setMouseLimit(mlw,mlh);
+    if (mMouse) setMouseLimit(mlw,mlh);
 }
 
 
@@ -301,8 +299,6 @@ void Handler::processInternalCallback()
 void Handler::createOIS(bool exclusive/* = true*/)
 {
     mIsExclusive = exclusive;
-
-    Logger(std::to_string(exclusive));
 
     OIS::ParamList pl;
     pl.insert({"WINDOW", std::to_string(mWindowID)});

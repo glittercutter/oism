@@ -353,9 +353,6 @@ private:
 };
 
 
-typedef std::list<Bind::CallbackSharedPtr> CallbackList;
-
-
 struct NamedBindingMap
 {
     Bind* getBinding(const std::string& name, bool forUse = true);
@@ -481,6 +478,21 @@ protected:
     bool mIsExclusive;
 
     std::queue<std::function<void()>> mInternalCallbacks;
+};
+
+
+// Helper container keeping callbacks alive
+struct CallbackList
+{
+    CallbackList(Handler* h) : mHandler(h) {}
+
+    void add(const std::string& name, const Bind::Callback& cb)
+        {mCallbacks.insert(std::make_pair(name,mHandler->callback(name,cb)));}
+    void remove(const std::string& name)
+        {mCallbacks.erase(name);}
+
+    std::unordered_map<std::string,Bind::CallbackSharedPtr> mCallbacks;
+    Handler* mHandler;
 };
 
 
