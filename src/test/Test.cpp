@@ -10,34 +10,45 @@
 
 int main(int argc, char** argv)
 {
+    // Set logger output
     oism::Logger::callback = [](const std::string& msg){std::cout<<"oism | "<<msg<<std::endl;};
 
-    auto input = new oism::Handler(testutils::createWindow());
+    // Create handler & load mapping
+    oism::Handler* input = new oism::Handler(testutils::createWindow());
     input->serialize<oism::SimpleSerializer>("../");
 
-    // Callbacks are disabled when the shared pointer goes out of scope
-    auto cbSharedPointer = input->callback("quit", [](){testutils::isRunning = false;});
+    // ===============
+    // Callbacks
+    // ===============
+    
+    // Callback are disabled when the share pointer is destroyed;
+    oism::Bind::CallbackSharedPtr exit = input->callback("quit",
+        [](){testutils::isRunning = false;});
 
     {
-        // Callback is disabled at the end of this scope
-        auto cbOutOfScope = input->callback("disabled",
-            [](){
-                std::cout << "this should be disabled!" << std::endl;
-            });
+        // Callback is disable at the end of the scope
+        auto tmp = input->callback("disabled",
+            [](){std::cout<<"disabled!"<<std::endl;});
     }
 
-    auto cbToggleExclusive = input->callback("toggle_exclusive", [&]()
-    {
-        input->setExclusive(!input->getExclusive());
-    });
+    // Helper container to create and destroy callbacks
+    oism::CallbackList cbList(input);
+    cbList.add("toggle_exclusive", [&](){input->setExclusive(!input->isExclusive());});
 
-    auto walkBinding = input->getBinding("walk");
+    // =======
+    // Bindings
+    // =======
+
+    // Binding are use if we need to check a value continuously.
+    // They represent any device in the form of -1.0 to 1.0,
+    // the value farthest from zero win.
+    oism::Bind* walk = input->getBinding("walk");
 
     while (testutils::isRunning)
     {
         input->update();
-        std::cout << "walk value=" << walkBinding->getValue();
-        std::cout << "                      \r" << std::flush;
+        std::cout<<"walk value="<<walk->getValue();
+        std::cout<<"                      \r"<<std::flush; // Keep the same output line
     }
     
     // Cleanup

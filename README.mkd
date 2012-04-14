@@ -1,6 +1,8 @@
 OISM - Mapping for OIS  
 ===
 
+See files in ./test/ for usage examples.
+
 ---
 
 File format for the 'SimpleSerializer'  
@@ -65,16 +67,3 @@ Config file
 ---
 
 The configuration file consist of simple key value pair on each line.
-
----
-
-Basic usage
-===
-
-    auto input = oism::Handler::getSingleton();
-    input.init<oism::SimpleSerializer>(your_window_id, "configuration_path");
-    
-    // Define callback
-    auto cb = input.callback("quit", [&](){running = false;});
-
-    while (running) input.update();
