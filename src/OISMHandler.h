@@ -15,12 +15,14 @@
 #include <array>
 #include <deque>
 #include <functional>
+#include <queue>
 #include <list>
 #include <memory>
 #include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 #include <unordered_map>
 
 
@@ -275,6 +277,9 @@ public:
     void removeListener(OIS::JoyStickListener*);
     unsigned getId() { return mId; }
 
+    const std::set<OIS::JoyStickListener*>& _getListeners() { return mListeners; }
+    void _setListeners(const std::set<OIS::JoyStickListener*>& lnr) { mListeners = lnr; }
+
 protected:
     bool buttonPressed(const OIS::JoyStickEvent& evt, int button);
     bool buttonReleased(const OIS::JoyStickEvent& evt, int button);
@@ -365,6 +370,8 @@ class Handler : NonCopyable, public OIS::MouseListener, public OIS::KeyListener
 friend class JoyStickListener;
 
 public:
+    typedef std::function<void(int*,int*)> MouseLimitRequest;
+
     Handler(unsigned long windowID, bool exclusive = true);
     virtual ~Handler();
 
@@ -379,7 +386,7 @@ public:
 
     void setMouseLimit(int w, int h);
     void setExclusive(bool exclusive = true);
-    bool getExclusive() { return mIsExclusive; }
+    bool isExclusive() const { return mIsExclusive; }
 
     void update();
     Bind::CallbackSharedPtr callback(const std::string& name, const Bind::Callback& cb, unsigned type = Bind::CT_ON_POSITIVE);
@@ -433,6 +440,9 @@ protected:
     void setKeyboardValue(const OIS::KeyEvent& key, float value);
     void setJoyStickValue(OIS::ComponentType cpntType, unsigned cpnt, JoyStickListener* lnr, float value);
 
+    void processInternalCallback();
+    void _setExclusive(bool exclusive); // Internal callback
+
     // Implement OIS::MouseListener
     bool mouseMoved(const OIS::MouseEvent& evt);
     bool mousePressed(const OIS::MouseEvent& evt, OIS::MouseButtonID id);
@@ -457,8 +467,8 @@ protected:
     OIS::Mouse* mMouse;
     OIS::Keyboard* mKeyboard;
     std::vector<std::pair<OIS::JoyStick*, JoyStickListener*>> mJoySticks;
-    std::set<OIS::KeyListener*> mKeyListeners;
-    std::set<OIS::MouseListener*> mMouseListeners;
+    std::unordered_set<OIS::KeyListener*> mKeyListeners;
+    std::unordered_set<OIS::MouseListener*> mMouseListeners;
 
     Configuration mConfig;
 
@@ -469,6 +479,8 @@ protected:
     unsigned long mWindowID;
 
     bool mIsExclusive;
+
+    std::queue<std::function<void()>> mInternalCallbacks;
 };
 
 

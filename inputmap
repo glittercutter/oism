@@ -1,5 +1,6 @@
 quit keyboard escape
 quit mouse left
+toggle_exclusive mouse right
 walk keyboard w
 walk keyboard -s
 walk joystick 0 button 1

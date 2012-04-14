@@ -215,7 +215,8 @@ Handler
 
 
 Handler::Handler(unsigned long windowID, bool exclusive/* = true*/)
-:   mMouseSmoothLastX(0.f), mMouseSmoothLastY(0.f),
+:   mOIS(nullptr), mMouse(nullptr), mKeyboard(nullptr),
+    mMouseSmoothLastX(0.f), mMouseSmoothLastY(0.f),
     mMouseSmoothUpdatedX(false), mMouseSmoothUpdatedY(false),
     mSerializer(0), mWindowID(windowID), mIsExclusive(exclusive)
 {
@@ -234,17 +235,66 @@ Handler::~Handler()
 
 void Handler::update()
 {
-    mMouse->capture();
-    smoothMouseCleanup();
-    mKeyboard->capture();
+    if (mMouse)
+    {
+        mMouse->capture();
+        smoothMouseCleanup();
+    }
+    if (mKeyboard) mKeyboard->capture();
     for (auto& pair : mJoySticks) pair.first->capture();
+
+    processInternalCallback();
 }
 
 
 void Handler::setExclusive(bool exclusive/* = true*/)
 {
+    Logger(std::to_string(exclusive));
+    mInternalCallbacks.push([this,exclusive](){_setExclusive(exclusive);});
+    //mIsExclusive = exclusive; // Satisfy calls to getExclusive() before the callback is executed
+}
+
+
+// Internal callback
+void Handler::_setExclusive(bool exclusive)
+{
+    Logger(std::to_string(exclusive));
+    // Copy joystick listeners with device ID
+    std::unordered_map<int,std::set<OIS::JoyStickListener*>> jsIDLnr;
+    for (auto p : mJoySticks)
+        jsIDLnr.insert(std::make_pair(p.first->getID(),p.second->_getListeners()));   
+
+    // Copy mouse limit
+    int mlw,mlh;
+    if (mMouse)
+    {
+        mlw = mMouse->getMouseState().width;
+        mlh = mMouse->getMouseState().height;
+    }
+
     destroyOIS();
     createOIS(exclusive);
+
+    // Restore joystick listeners
+    for (auto p : mJoySticks)
+    {
+        auto it = jsIDLnr.find(p.first->getID());
+        if (it == jsIDLnr.end()) continue;
+        p.second->_setListeners(it->second);
+    }
+
+    // Restore mouse limit
+    //if (mMouse) setMouseLimit(mlw,mlh);
+}
+
+
+void Handler::processInternalCallback()
+{
+    while (!mInternalCallbacks.empty())
+    {
+        mInternalCallbacks.front()();
+        mInternalCallbacks.pop();
+    }
 }
 
 
@@ -252,10 +302,12 @@ void Handler::createOIS(bool exclusive/* = true*/)
 {
     mIsExclusive = exclusive;
 
+    Logger(std::to_string(exclusive));
+
     OIS::ParamList pl;
     pl.insert({"WINDOW", std::to_string(mWindowID)});
     
-    if (!exclusive)
+    if (!mIsExclusive)
     {
 #if defined OIS_WIN32_PLATFORM
         pl.insert({"w32_mouse",    "DISCL_FOREGROUND"});
@@ -317,24 +369,28 @@ void Handler::createOIS(bool exclusive/* = true*/)
 
 void Handler::destroyOIS()
 {
-    mOIS->destroyInputObject(mMouse);
-    mOIS->destroyInputObject(mKeyboard);
+    mOIS->destroyInputObject(mKeyboard); mKeyboard = nullptr;
+    mOIS->destroyInputObject(mMouse); mMouse = nullptr;
 
     for (auto& pair : mJoySticks)
     {
         mOIS->destroyInputObject(pair.first); // JoyStick
         delete pair.second; // JoyStickListener
     }
+    mJoySticks.clear();
 
-    OIS::InputManager::destroyInputSystem(mOIS);
+    OIS::InputManager::destroyInputSystem(mOIS); mOIS = nullptr;
 }
 
 
 void Handler::setMouseLimit(int w, int h)
 {
-    Logger("Setting mouse limit: width="+std::to_string(w)+" height="+std::to_string(h)); 
-	mMouse->getMouseState().width = w;
-	mMouse->getMouseState().height = h;
+    if (mMouse)
+    {
+        Logger("Setting mouse limit: width="+std::to_string(w)+" height="+std::to_string(h)); 
+        mMouse->getMouseState().width = w;
+        mMouse->getMouseState().height = h;
+    }
 }
 
 
@@ -387,7 +443,7 @@ void Handler::_buildBindingListMaps()
 void Handler::addKeyListener(OIS::KeyListener* lnr) { mKeyListeners.insert(lnr); }
 void Handler::removeKeyListener(OIS::KeyListener* lnr) { mKeyListeners.erase(lnr); }
 void Handler::addMouseListener(OIS::MouseListener* lnr) { mMouseListeners.insert(lnr); }
-void Handler::removeMouseListener(OIS::MouseListener* lnr) { mMouseListeners.insert(lnr); }
+void Handler::removeMouseListener(OIS::MouseListener* lnr) { mMouseListeners.erase(lnr); }
 
 void Handler::addJoyStickListener(OIS::JoyStickListener* lnr, int id)
 {

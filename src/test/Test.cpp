@@ -17,6 +17,7 @@ int main(int argc, char** argv)
 
     // Callbacks are disabled when the shared pointer goes out of scope
     auto cbSharedPointer = input->callback("quit", [](){testutils::isRunning = false;});
+
     {
         // Callback is disabled at the end of this scope
         auto cbOutOfScope = input->callback("disabled",
@@ -24,6 +25,11 @@ int main(int argc, char** argv)
                 std::cout << "this should be disabled!" << std::endl;
             });
     }
+
+    auto cbToggleExclusive = input->callback("toggle_exclusive", [&]()
+    {
+        input->setExclusive(!input->getExclusive());
+    });
 
     auto walkBinding = input->getBinding("walk");
 
