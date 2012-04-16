@@ -400,8 +400,6 @@ class Handler : NonCopyable, public OIS::MouseListener, public OIS::KeyListener
 friend class JoyStickListener;
 
 public:
-    typedef std::function<void(int*,int*)> MouseLimitRequest;
-
     Handler(unsigned long windowID, bool exclusive = true);
     virtual ~Handler();
 
