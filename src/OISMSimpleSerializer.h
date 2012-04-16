@@ -98,4 +98,4 @@ protected:
 };
 
 
-} // oism
+} // namespace oism

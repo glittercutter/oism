@@ -219,7 +219,7 @@ Handler::Handler(unsigned long windowID, bool exclusive/* = true*/)
 :   mOIS(nullptr), mMouse(nullptr), mKeyboard(nullptr),
     mMouseSmoothLastX(0.f), mMouseSmoothLastY(0.f),
     mMouseSmoothUpdatedX(false), mMouseSmoothUpdatedY(false),
-    mSerializer(0), mWindowID(windowID), mIsExclusive(exclusive)
+    mWindowID(windowID), mIsExclusive(exclusive)
 {
     createOIS(exclusive);
 }
@@ -227,10 +227,7 @@ Handler::Handler(unsigned long windowID, bool exclusive/* = true*/)
 
 Handler::~Handler()
 {
-    _saveBinding();
-    _saveConfig();
     destroyOIS();
-    delete mSerializer;
 }
 
 
@@ -393,28 +390,28 @@ void Handler::setMouseLimit(int w, int h)
 }
 
 
-void Handler::_loadBinding()
+void Handler::_loadBinding(Serializer& s)
 {
     mBindings.clear();
-    mSerializer->loadBinding(mBindings);
+    s.loadBinding(mBindings);
 }
 
 
-void Handler::_saveBinding()
+void Handler::_saveBinding(Serializer& s)
 {
-    mSerializer->saveBinding(mBindings);
+    s.saveBinding(mBindings);
 }
 
 
-void Handler::_loadConfig()
+void Handler::_loadConfig(Serializer& s)
 {
-    mSerializer->loadConfig(&mConfig);
+    s.loadConfig(&mConfig);
 }
 
 
-void Handler::_saveConfig()
+void Handler::_saveConfig(Serializer& s)
 {
-    mSerializer->saveConfig(&mConfig);
+    s.saveConfig(&mConfig);
 }
 
 

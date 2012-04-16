@@ -11,7 +11,7 @@
 int main(int argc, char** argv)
 {
     auto input = new oism::Handler(testutils::createWindow());
-    input->serialize<oism::SimpleSerializer>("../");
+    input->load<oism::SimpleSerializer>("../");
 
     auto cbSharedPointer = input->callback("quit", [](){testutils::isRunning = false;});
     auto walkBinding = input->getBinding("walk");
@@ -31,7 +31,7 @@ int main(int argc, char** argv)
     using namespace std::chrono;
 
     auto startTime = high_resolution_clock::now();
-    unsigned iter = 0;
+    unsigned long iter = 0;
 
     while (testutils::isRunning)
     {
@@ -43,6 +43,7 @@ int main(int argc, char** argv)
     std::cout << duration_cast<nanoseconds>(diff).count() / (double)iter << " nanoseconds / iteration" << std::endl;
     
     // Cleanup
+    input->save<oism::SimpleSerializer>("../");
     delete input;
     testutils::destroyWindow();
 

@@ -102,12 +102,10 @@ struct InputEvent
 
     static inline unsigned char getByte(Type evt, unsigned num)
     {
-        assert(num >= 1 && num <= 4);
         return ((unsigned char*)&evt)[4 - num];
     }
     static inline void setByte(Type& evt, unsigned char data, unsigned num)
     {
-        assert(num >= 1 && num <= 4);
         ((unsigned char*)&evt)[4 - num] = data;
     }
 };
@@ -355,24 +353,25 @@ public:
     const CallbackSharedPtr& addCallback(unsigned callbackType, const CallbackSharedPtr& cb);
     inline float getValue() const { return mValue; }
 
-    // Must sync modification with 'Handler::_buildBindingListMaps()'
+    /// @name Modifiers
+    /// Apply change by calling 'Handler::_buildBindingListMaps()'.
+    ///@{
     void addKeyEvent(InputEvent::Type evt);
     void addMouseEvent(InputEvent::Type evt);
     void addJoyStickEvent(InputEvent::Type evt);
     void removeKeyEvent(InputEvent::Type evt);
     void removeMouseEvent(InputEvent::Type evt);
     void removeJoyStickEvent(InputEvent::Type evt);
+    ///@}
 
     const InputEventList& getKeyEvents() {return mKeyEvents;}
     const InputEventList& getMouseEvents() {return mMouseEvents;}
     const InputEventList& getJoyStickEvents() {return mJoyStickEvents;}
 
-    // Return farthest value from zero -/+
-    float _getMaxValue(Handler*) const;
+    float _getMaxValue(Handler*) const; //>! Return farthest value from zero
 
 protected:
-    // Used by friend class 'Handler'
-    void setValue(Handler*, float);
+    void setValue(Handler*, float); //>! Used by friend class 'Handler'
     InputEventList mKeyEvents;
     InputEventList mMouseEvents;
     InputEventList mJoyStickEvents;
@@ -404,12 +403,20 @@ public:
     virtual ~Handler();
 
     template<typename Serializer_t>
-    void serialize(const std::string& path)
+    void load(const std::string& path)
     {
-        mSerializer = new Serializer_t(path);
-        _loadBinding();
-        _loadConfig();
+        Serializer_t s(path);
+        _loadBinding(s);
+        _loadConfig(s);
         _buildBindingListMaps();
+    }
+
+    template<typename Serializer_t>
+    void save(const std::string& path)
+    {
+        Serializer_t s(path);
+        _saveBinding(s);
+        _saveConfig(s);
     }
 
     void setMouseLimit(int w, int h);
@@ -431,19 +438,14 @@ public:
     OIS::Mouse* getMouse() { return mMouse; }
     float getJoyStickValue(unsigned int) const;
 
-    void _loadBinding();
-    void _saveBinding();
-    void _loadConfig();
-    void _saveConfig();
-    void _buildBindingListMaps(); // Sync
+    void _buildBindingListMaps(); //>! Apply change made to bindings
 
     static std::string convertOISDeviceTypeToString(OIS::Type type);
 
     struct Configuration
     {
         Configuration()
-        :   // Assign default values
-            mouseSensivityAxisX(0.2f),
+        :   mouseSensivityAxisX(0.2f),
             mouseSensivityAxisY(0.2f),
             mouseSmoothing(0.1f)
         {}
@@ -468,23 +470,34 @@ protected:
     void setKeyboardValue(const OIS::KeyEvent& key, float value);
     void setJoyStickValue(OIS::ComponentType cpntType, unsigned cpnt, JoyStickListener* lnr, float value);
 
-    void processInternalCallback();
-    void _setExclusive(bool exclusive); // Internal callback
+    void _loadBinding(Serializer&);
+    void _saveBinding(Serializer&);
+    void _loadConfig(Serializer&);
+    void _saveConfig(Serializer&);
 
-    // Implement OIS::MouseListener
+    void processInternalCallback();
+    void _setExclusive(bool exclusive); //!< Internal callback
+
+    /// @name OIS::MouseListener
+    //@{
     bool mouseMoved(const OIS::MouseEvent& evt);
     bool mousePressed(const OIS::MouseEvent& evt, OIS::MouseButtonID id);
+    //@}
 
-    // Implement OIS::KeyListener
+    /// @name OIS::KeyListener
+    //@{
     bool mouseReleased(const OIS::MouseEvent& evt, OIS::MouseButtonID id);
     bool keyPressed(const OIS::KeyEvent& evt);
     bool keyReleased(const OIS::KeyEvent& evt);
+    //@}
 
-    // Callback from Input::JoyStickListener
+    /// @name Callback from oism::JoyStickListener
+    //@{
     void buttonPressed(unsigned button, JoyStickListener* lnr);
     void buttonReleased(unsigned button, JoyStickListener* lnr);
     void axisMoved(unsigned axis, float value, JoyStickListener* lnr);
     void povMoved(unsigned idx, unsigned direction, JoyStickListener* lnr);
+    //@}
 
     InputEventBindingListMap mKeyEvents;
     InputEventBindingListMap mMouseEvents;
@@ -503,16 +516,13 @@ protected:
     float mMouseSmoothLastX, mMouseSmoothLastY;
     bool mMouseSmoothUpdatedX, mMouseSmoothUpdatedY;
 
-    Serializer* mSerializer;
     unsigned long mWindowID;
-
     bool mIsExclusive;
-
     std::queue<std::function<void()>> mInternalCallbacks;
 };
 
 
-// Helper container keeping callbacks alive
+//! Helper container keeping callbacks alive
 struct CallbackList
 {
     CallbackList(Handler* h) : mHandler(h) {}
@@ -544,4 +554,4 @@ protected:
 };
 
 
-} /* oism */
+} // namespace oism

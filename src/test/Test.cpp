@@ -17,7 +17,7 @@ int main(int argc, char** argv)
 
     // Create handler & load mapping
     oism::Handler* input = new oism::Handler(testutils::createWindow());
-    input->serialize<oism::SimpleSerializer>("../");
+    input->load<oism::SimpleSerializer>("../");
 
     // ===============
     // Callbacks
@@ -54,6 +54,7 @@ int main(int argc, char** argv)
     }
     
     // Cleanup
+    input->save<oism::SimpleSerializer>("../");
     delete input;
     testutils::destroyWindow();
 
