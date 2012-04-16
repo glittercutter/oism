@@ -3,8 +3,6 @@
 
 #include "OISMSimpleSerializer.h"
 
-#include "OISMLog.h"
-
 #include <algorithm>
 #include <cctype>
 
@@ -36,7 +34,7 @@ std::string enum_to_string(const NamedEnum& m, unsigned v)
     auto it = reverse_map_search(m, v);
     if (it == m.end()) 
     {
-        WLog() << "Invalid enum: " << v;
+        log::log("Invalid enum: "+std::to_string(v), log::Level::Error);
         return "__INVALID__";
     }
 
@@ -90,7 +88,7 @@ File::File(const std::string& filename)
 :   fs(filename), filename(filename), wend(0), lineNum(0)
 {
     if (!fs.is_open())
-        ELog() << "Error opening file: " << filename;
+        log::log("Error opening file: "+filename, log::Level::Error);
 } 
 
 bool File::isOpen()
@@ -122,7 +120,7 @@ int File::nextNumber(int& num)
     }
     catch (const std::invalid_argument& e)
     {
-        WLog()<<"File: "<<filename<<" On line:"<<lineNum<<" -- Expected a number:"<<str;
+        log::log("File: "+filename+" On line:"+std::to_string(lineNum)+" -- Expected a number:"+str, log::Level::Error);
     }
     return 0;
 }
@@ -151,7 +149,7 @@ std::string File::_findKey(const std::string& key)
         if (!line.compare(start, end - start, key))
             return line.substr(end);
     }
-    WLog()<<"File: "<<filename<<" Key not found '"<<key<<"'";
+    log::log("File: "+filename+" Key not found '"+key+"'", log::Level::Error);
     return "";
 }
 
@@ -166,7 +164,7 @@ bool File::readKeyValuePair(const std::string& key, int& value)
     }
     catch (const std::invalid_argument& e)
     {
-        WLog()<<"File: "<<filename<<" Integer expected for key: '"<<key<<"'";
+        log::log("File: "+filename+" Integer expected for key: '"+key+"'", log::Level::Error);
     }
     return 0;
 }
@@ -182,7 +180,7 @@ bool File::readKeyValuePair(const std::string& key, float& value)
     }
     catch (const std::invalid_argument& e)
     {
-        WLog()<<"File: "<<filename<<" Floating point number expected for key: '"<<key<<"'";
+        log::log("File: "+filename+" Floating point number expected for key: '"+key+"'", log::Level::Error);
     }
     return 0;
 }
@@ -410,7 +408,7 @@ void SimpleSerializer::loadBinding(NamedBindingMap& map)
         if (linear_search(mKeyboardDeviceNames, devName)) addKey(b, fr);
         else if (linear_search(mMouseDeviceNames, devName)) addMouse(b, fr);
         else if (linear_search(mJoyStickDeviceNames, devName)) addJoyStick(b, fr);
-        else WLog() << "Invalid device name: "<<devName;
+        else log::log("Invalid device name: "+devName, log::Level::Error);
     }
 }
 
@@ -449,7 +447,7 @@ void SimpleSerializer::addKey(Bind* b, File& fr) const
                 continue;
             }
 
-            WLog() << "Invalid key name:"<<keyName;
+            log::log("Invalid key name:"+keyName, log::Level::Error);
         }
         b->addKeyEvent(KeyEvent::create(key, mod, rev));
     }
@@ -467,7 +465,7 @@ void SimpleSerializer::addMouse(Bind* b, File& f) const
         auto it = mMouseComponentNames.find(word);
         if (it == mMouseComponentNames.end())
         {
-            WLog() << "Invalid mouse event name: "<<word;
+            log::log("Invalid mouse event name: "+word, log::Level::Warning);
             continue;
         }
 
@@ -483,14 +481,14 @@ void SimpleSerializer::addJoyStick(Bind* b, File& f) const
     int joystickNum;
     if (!f.nextNumber(joystickNum))
     {
-        WLog() << "Invalid joystick number\n";
+        log::log("Invalid joystick number\n", log::Level::Warning);
         return;
     }
 
     std::string componentName;
     if (!f.nextWord(componentName)) 
     {
-        WLog() << "Invalid joystick event: " << componentName;
+        log::log("Invalid joystick event: "+componentName, log::Level::Warning);
         return;
     }
 
@@ -499,14 +497,14 @@ void SimpleSerializer::addJoyStick(Bind* b, File& f) const
     auto cpntIt = mJoyStickComponentNames.find(componentName);
     if (cpntIt == mJoyStickComponentNames.end())
     {
-        WLog() << "Invalid joystick component: " << componentName;
+        log::log("Invalid joystick component: "+componentName, log::Level::Warning);
         return;
     }
 
     int componentId;
     if (!f.nextNumber(componentId))
     {
-        WLog() << "Invalid joystick component id";
+        log::log("Invalid joystick component id", log::Level::Warning);
         return;
     }
 

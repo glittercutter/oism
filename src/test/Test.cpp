@@ -1,5 +1,4 @@
 #include "../OISMHandler.h"
-#include "../OISMLog.h"
 #include "../OISMSimpleSerializer.h"
 
 #include "TestUtils.h"
@@ -11,7 +10,10 @@
 int main(int argc, char** argv)
 {
     // Set logger output
-    oism::Logger::callback = [](const std::string& msg){std::cout<<"oism | "<<msg<<std::endl;};
+    oism::log::set([](const std::string& msg, oism::log::Level lvl)
+    {
+        std::cout<<"oism | "<<oism::log::to_string(lvl)<<msg<<std::endl;
+    });
 
     // Create handler & load mapping
     oism::Handler* input = new oism::Handler(testutils::createWindow());

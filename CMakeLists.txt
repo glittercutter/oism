@@ -4,7 +4,6 @@ project (test)
 set (SRC
     src/OISMHandler.cpp
     src/OISMHandlerUgly.cpp
-    src/OISMLog.cpp
     src/OISMSimpleSerializer.cpp
     src/test/TestUtils.cpp
     )

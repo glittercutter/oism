@@ -34,7 +34,40 @@ namespace oism
 {
 
 
-extern std::function<void(const std::string&)> Logger;
+namespace log
+{
+
+enum class Level
+{
+    Info,
+    Warning,
+    Error
+};
+
+typedef std::function<void(const std::string&, Level)> Func_t;
+extern Func_t g_Func;
+
+inline void set(const Func_t& func) { g_Func = func; }
+
+// Safe to use on empty function + default parameter
+inline void log(const std::string& msg, Level lvl = Level::Info)
+{
+    if (g_Func)
+        g_Func(msg,lvl);
+}
+
+inline std::string to_string(Level lvl)
+{
+    switch (lvl)
+    {
+        case Level::Info: return "";
+        case Level::Warning: return "WARNING | ";
+        case Level::Error: return "== ERROR == | ";
+    }
+    return "";
+}
+
+} // namespace log
 
 
 class NonCopyable

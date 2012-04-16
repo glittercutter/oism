@@ -1,7 +1,7 @@
 OISM - Mapping for OIS  
 ===
 
-See files in ./test/ for usage examples.
+See files in .src/test/ for usage examples.
 
 ---
 
