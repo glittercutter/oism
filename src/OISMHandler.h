@@ -47,14 +47,19 @@ enum class Level
 typedef std::function<void(const std::string&, Level)> Func_t;
 extern Func_t g_Func;
 
+/// Set logger
 inline void set(const Func_t& func) { g_Func = func; }
 
-// Safe to use on empty function + default parameter
+#ifdef OISM_ENABLE_LOG
+/// Safe to use on empty function + default parameter
 inline void log(const std::string& msg, Level lvl = Level::Info)
 {
     if (g_Func)
         g_Func(msg,lvl);
 }
+#else // OISM_ENABLE_LOG
+inline void log(const std::string& msg, Level lvl = Level::Info) {}
+#endif // OISM_ENABLE_LOG
 
 inline std::string to_string(Level lvl)
 {
@@ -491,6 +496,7 @@ protected:
     bool keyReleased(const OIS::KeyEvent& evt);
     //@}
 
+
     /// @name Callback from oism::JoyStickListener
     //@{
     void buttonPressed(unsigned button, JoyStickListener* lnr);
@@ -523,8 +529,9 @@ protected:
 
 
 //! Helper container keeping callbacks alive
-struct CallbackList
+class CallbackList
 {
+public:
     CallbackList(Handler* h) : mHandler(h) {}
 
     void add(const std::string& name, const Bind::Callback& cb)
