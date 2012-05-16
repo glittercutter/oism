@@ -452,7 +452,7 @@ public:
         Configuration()
         :   mouseSensivityAxisX(0.2f),
             mouseSensivityAxisY(0.2f),
-            mouseSmoothing(0.1f)
+            mouseSmoothing(2.f)
         {}
 
         float mouseSensivityAxisX;

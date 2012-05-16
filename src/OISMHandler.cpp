@@ -541,12 +541,10 @@ void Handler::setMouseValue(unsigned cpnt, float value)
 
 void Handler::smoothMouse(float& curr, float& last)
 {
-    float tmp = curr;
-
     if (mConfig.mouseSmoothing)
         curr = (curr + (last * mConfig.mouseSmoothing)) / (mConfig.mouseSmoothing + 1.f);
 
-    last = tmp;
+    last = curr;
 }
 
 
