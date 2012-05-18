@@ -261,7 +261,8 @@ void Handler::_setExclusive(bool exclusive)
         jsIDLnr.insert(std::make_pair(p.first->getID(),p.second->_getListeners()));   
 
     // Copy mouse limit
-    int mlw,mlh;
+    int mlw = 0; int mlh = 0;
+    bool hadMouse = mMouse;
     if (mMouse)
     {
         mlw = mMouse->getMouseState().width;
@@ -282,7 +283,7 @@ void Handler::_setExclusive(bool exclusive)
     }
 
     // Restore mouse limit
-    if (mMouse) setMouseLimit(mlw,mlh);
+    if (hadMouse && mMouse) setMouseLimit(mlw,mlh);
 }
 
 
