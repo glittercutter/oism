@@ -88,7 +88,17 @@ File::File(const std::string& filename)
 :   fs(filename), filename(filename), wend(0), lineNum(0)
 {
     if (!fs.is_open())
-        log::log("Error opening file: "+filename, log::Level::Error);
+    {
+        // Attempt to create file
+        {
+            std::ofstream ofs(filename);
+            if (!ofs.good()) log::log("Error creating file: "+filename, log::Level::Error);
+        }
+        
+        fs.open(filename);
+        if (!fs.is_open())
+            log::log("Error opening file: "+filename, log::Level::Error);
+    }
 } 
 
 bool File::isOpen()
