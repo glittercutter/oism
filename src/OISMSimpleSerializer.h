@@ -92,6 +92,7 @@ protected:
     NamedEnum mMouseComponentNames;
     NamedEnum mJoyStickComponentNames;
 
+    // Devices can have aliases
     std::vector<std::string> mKeyboardDeviceNames;
     std::vector<std::string> mMouseDeviceNames;
     std::vector<std::string> mJoyStickDeviceNames;

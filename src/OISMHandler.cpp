@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <cmath>
 #include <sstream>
-#include <iostream>
 
 
 using namespace oism;
@@ -46,6 +45,8 @@ Bind
 
 void Bind::setValue(Handler* handler, float val)
 {
+    if (mValue == val) return;
+
     float oldVal = mValue;
     mValue = val;
 
@@ -217,8 +218,6 @@ Handler
 
 Handler::Handler(unsigned long windowID, bool exclusive/* = true*/)
 :   mOIS(nullptr), mMouse(nullptr), mKeyboard(nullptr),
-    mMouseSmoothLastX(0.f), mMouseSmoothLastY(0.f),
-    mMouseSmoothUpdatedX(false), mMouseSmoothUpdatedY(false),
     mWindowID(windowID), mIsExclusive(exclusive)
 {
     createOIS(exclusive);
@@ -235,8 +234,8 @@ void Handler::update()
 {
     if (mMouse)
     {
+        clearMouseValue();
         mMouse->capture();
-        smoothMouseCleanup();
     }
     if (mKeyboard) mKeyboard->capture();
     for (auto& pair : mJoySticks) pair.first->capture();
@@ -425,6 +424,7 @@ void Handler::_buildBindingListMaps()
     for (auto& pair : mBindings.map)
     {
         Bind* b = pair.second;
+
         for (auto evt : b->mKeyEvents)
             mKeyEvents[evt].push_back(b);
 
@@ -441,7 +441,6 @@ void Handler::addKeyListener(OIS::KeyListener* lnr) { mKeyListeners.insert(lnr);
 void Handler::removeKeyListener(OIS::KeyListener* lnr) { mKeyListeners.erase(lnr); }
 void Handler::addMouseListener(OIS::MouseListener* lnr) { mMouseListeners.insert(lnr); }
 void Handler::removeMouseListener(OIS::MouseListener* lnr) { mMouseListeners.erase(lnr); }
-
 void Handler::addJoyStickListener(OIS::JoyStickListener* lnr, int id)
 {
     if (id >= 0 && mJoySticks.size() > (unsigned)id)
@@ -449,7 +448,6 @@ void Handler::addJoyStickListener(OIS::JoyStickListener* lnr, int id)
     else
         log::log(std::string(__func__)+" Invalid joystick number", log::Level::Error);
 }
-
 void Handler::removeJoyStickListener(OIS::JoyStickListener* lnr)
 {
     for (auto js : mJoySticks)
@@ -522,38 +520,27 @@ void Handler::setBindingValue(InputEventBindingListMap& bindings, unsigned evt, 
 {
     auto it = bindings.find(evt);
     if (it == bindings.end()) return;
+
     for (auto binding : it->second)
         binding->setValue(this, value);
 }
 
 
+void Handler::clearMouseValue()
+{
+    setMouseValue(MouseEvent::CPNT_AXIS_X, 0);
+    setMouseValue(MouseEvent::CPNT_AXIS_Y, 0);
+    setMouseValue(MouseEvent::CPNT_AXIS_Z, 0);
+}
+
+
 void Handler::setMouseValue(unsigned cpnt, float value)
 {
-    if (cpnt == MouseEvent::CPNT_AXIS_X) smoothMouse(value, mMouseSmoothLastX);
-    else if (cpnt == MouseEvent::CPNT_AXIS_Y) smoothMouse(value, mMouseSmoothLastY);
-
     auto evt = MouseEvent::create(cpnt);
     setBindingValue(mMouseEvents, evt, value);
 
     MouseEvent::setReverse(evt);
     setBindingValue(mMouseEvents, evt, -value);
-}
-
-
-void Handler::smoothMouse(float& curr, float& last)
-{
-    if (mConfig.mouseSmoothing)
-        curr = (curr + (last * mConfig.mouseSmoothing)) / (mConfig.mouseSmoothing + 1.f);
-
-    last = curr;
-}
-
-
-void Handler::smoothMouseCleanup()
-{
-    if (!mMouseSmoothUpdatedX) setMouseValue(MouseEvent::CPNT_AXIS_X, 0);
-    if (!mMouseSmoothUpdatedY) setMouseValue(MouseEvent::CPNT_AXIS_Y, 0);
-    mMouseSmoothUpdatedX = mMouseSmoothUpdatedY = false;
 }
 
 
@@ -584,14 +571,13 @@ void Handler::setJoyStickValue(OIS::ComponentType cpntType, unsigned cpnt, JoySt
 
 bool Handler::mouseMoved(const OIS::MouseEvent& evt)
 {
-    if (evt.state.X.rel) mMouseSmoothUpdatedX = true;
-    if (evt.state.Y.rel) mMouseSmoothUpdatedY = true;
-
     float x = evt.state.X.rel * mConfig.mouseSensivityAxisX;
     float y = evt.state.Y.rel * mConfig.mouseSensivityAxisY;
+    float z = evt.state.Z.rel * mConfig.mouseSensivityAxisZ;
 
     setMouseValue(MouseEvent::CPNT_AXIS_X, x);
     setMouseValue(MouseEvent::CPNT_AXIS_Y, y);
+    setMouseValue(MouseEvent::CPNT_AXIS_Z, z);
 
     for (auto lnr : mMouseListeners) lnr->mouseMoved(evt);
     return true;

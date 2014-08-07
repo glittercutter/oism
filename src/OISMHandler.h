@@ -3,7 +3,6 @@
 
 #pragma once 
 
-#include "mm/cache_map.hpp"
 #include "OISMfwdcl.h"
 
 #include <OISEvents.h>
@@ -90,6 +89,7 @@ struct InputEvent
 {
     // Byte number start from the right.
     typedef unsigned Type;
+
     static const unsigned FlagByte = 1;
     static const unsigned char ReverseFlag = 1 << 0;
 
@@ -193,6 +193,7 @@ struct MouseEvent : public InputEvent
 
         CPNT_AXIS_X,
         CPNT_AXIS_Y,
+        CPNT_AXIS_Z // Mouse wheel
     };
 };
 
@@ -452,26 +453,25 @@ public:
         Configuration()
         :   mouseSensivityAxisX(0.2f),
             mouseSensivityAxisY(0.2f),
-            mouseSmoothing(2.f)
+            mouseSensivityAxisZ(1.0f)
         {}
 
         float mouseSensivityAxisX;
         float mouseSensivityAxisY;
-        float mouseSmoothing;
+        float mouseSensivityAxisZ;
         std::vector<float> joystickDeadZones;
     };
 
 protected:
     typedef std::deque<Bind*> BindingList;
-    typedef mm::cache_map<InputEvent::Type, BindingList> InputEventBindingListMap;
+    typedef std::unordered_map<InputEvent::Type, BindingList> InputEventBindingListMap;
 
     void createOIS(bool exclusive = true);
     void destroyOIS();
 
     void setBindingValue(InputEventBindingListMap& bindings, unsigned evt, float value);
     void setMouseValue(unsigned cnpt, float value);
-    void smoothMouseCleanup();
-    void smoothMouse(float& curr, float& old);
+    void clearMouseValue();
     void setKeyboardValue(const OIS::KeyEvent& key, float value);
     void setJoyStickValue(OIS::ComponentType cpntType, unsigned cpnt, JoyStickListener* lnr, float value);
 
@@ -518,9 +518,6 @@ protected:
     std::unordered_set<OIS::MouseListener*> mMouseListeners;
 
     Configuration mConfig;
-
-    float mMouseSmoothLastX, mMouseSmoothLastY;
-    bool mMouseSmoothUpdatedX, mMouseSmoothUpdatedY;
 
     unsigned long mWindowID;
     bool mIsExclusive;

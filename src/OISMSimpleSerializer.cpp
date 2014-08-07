@@ -6,6 +6,10 @@
 #include <algorithm>
 #include <cctype>
 
+// DEBUG
+#include <iostream>
+
+
 using namespace oism;
 
 
@@ -214,7 +218,7 @@ SimpleSerializer::SimpleSerializer(const std::string& path)
 :   Serializer(path),
     mKeyNames(145),
     mKeyModifierNames(3),
-    mMouseComponentNames(10),
+    mMouseComponentNames(11),
     mJoyStickComponentNames(5),
     mKeyboardDeviceNames(5),
     mMouseDeviceNames(3),
@@ -336,6 +340,7 @@ SimpleSerializer::SimpleSerializer(const std::string& path)
     mKeyNames["volumeup"] = OIS::KC_VOLUMEUP;
     mKeyNames["webhome"] = OIS::KC_WEBHOME;
     mKeyNames["numpadcomma"] = OIS::KC_NUMPADCOMMA;
+
     mKeyNames["divide"] = OIS::KC_DIVIDE;
     mKeyNames["sysrq"] = OIS::KC_SYSRQ;
     mKeyNames["rmenu"] = OIS::KC_RMENU;
@@ -380,6 +385,7 @@ SimpleSerializer::SimpleSerializer(const std::string& path)
     mMouseComponentNames["button7"] = MouseEvent::Component::CPNT_BUTTON7;
     mMouseComponentNames["axis_x"] = MouseEvent::Component::CPNT_AXIS_X;
     mMouseComponentNames["axis_y"] = MouseEvent::Component::CPNT_AXIS_Y;
+    mMouseComponentNames["axis_z"] = MouseEvent::Component::CPNT_AXIS_Z;
 
     mJoyStickComponentNames["button"] = OIS::OIS_Button;
     mJoyStickComponentNames["axis"] = OIS::OIS_Axis;
@@ -415,6 +421,7 @@ void SimpleSerializer::loadBinding(NamedBindingMap& map)
         
         Bind* b = map.getBinding(name, false);
         
+        // Search for any name a device can have
         if (linear_search(mKeyboardDeviceNames, devName)) addKey(b, fr);
         else if (linear_search(mMouseDeviceNames, devName)) addMouse(b, fr);
         else if (linear_search(mJoyStickDeviceNames, devName)) addJoyStick(b, fr);
@@ -459,6 +466,7 @@ void SimpleSerializer::addKey(Bind* b, File& fr) const
 
             log::log("Invalid key name:"+keyName, log::Level::Error);
         }
+
         b->addKeyEvent(KeyEvent::create(key, mod, rev));
     }
 }
@@ -545,7 +553,7 @@ void SimpleSerializer::doConfig(Handler::Configuration* c, File::KeyValueOperati
     File file(mPath+g_conf_filename);
     file.keyValuePair("mouse_sensivity_axis_x", c->mouseSensivityAxisX, oper);
     file.keyValuePair("mouse_sensivity_axis_y", c->mouseSensivityAxisY, oper);
-    file.keyValuePair("mouse_smoothing", c->mouseSmoothing, oper);
+    file.keyValuePair("mouse_sensivity_axis_z", c->mouseSensivityAxisZ, oper);
 }
 
 
