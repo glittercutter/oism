@@ -66,11 +66,18 @@ void Bind::doCallback(unsigned callbackType)
 {
     CallbackWeakPtrList& ls = mCallbacks[callbackType];
     
-    for (auto it = ls.begin(); it != ls.end(); it++)
+    for (auto it = ls.begin(); it != ls.end(); )
     {
         std::shared_ptr<Callback> cb = it->lock();
-        if (cb.get()) (*cb.get())();
-        else it = ls.erase(it);
+        if (cb.get())
+        {
+            (*cb.get())();
+            ++it;
+        }
+        else
+        {
+            it = ls.erase(it);
+        }
     }
 }
 
