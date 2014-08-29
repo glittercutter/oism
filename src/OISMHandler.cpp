@@ -45,7 +45,6 @@ Bind
 
 void Bind::setValue(Handler* handler, float val)
 {
-    log::log(__PRETTY_FUNCTION__);
     if (mValue == val) return;
 
     float oldVal = mValue;
