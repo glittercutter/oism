@@ -522,6 +522,9 @@ protected:
     unsigned long mWindowID;
     bool mIsExclusive;
     std::queue<std::function<void()>> mInternalCallbacks;
+
+    bool mMouseRelativeUpdatedX, mMouseRelativeUpdatedY, mMouseRelativeUpdatedZ;
+    float mMouseLastRelativeX, mMouseLastRelativeY, mMouseLastRelativeZ;
 };
 
 

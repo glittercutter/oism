@@ -12,5 +12,6 @@ using namespace oism;
 
 InputEvent::Type KeyEvent::create2(const OIS::KeyEvent& evt, OIS::Keyboard* kb, bool rev/* = false*/)
 {
+    log::log(__PRETTY_FUNCTION__+std::string("key=")+std::to_string(evt.key));
     return create(evt.key, kb->mModifiers, rev);
 }

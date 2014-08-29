@@ -45,6 +45,7 @@ Bind
 
 void Bind::setValue(Handler* handler, float val)
 {
+    log::log(__PRETTY_FUNCTION__);
     if (mValue == val) return;
 
     float oldVal = mValue;
@@ -225,7 +226,10 @@ Handler
 
 Handler::Handler(unsigned long windowID, bool exclusive/* = true*/)
 :   mOIS(nullptr), mMouse(nullptr), mKeyboard(nullptr),
-    mWindowID(windowID), mIsExclusive(exclusive)
+    mWindowID(windowID), mIsExclusive(exclusive),
+    mMouseRelativeUpdatedX(false),
+    mMouseRelativeUpdatedY(false),
+    mMouseRelativeUpdatedZ(false)
 {
     createOIS(exclusive);
 }
@@ -535,9 +539,11 @@ void Handler::setBindingValue(InputEventBindingListMap& bindings, unsigned evt, 
 
 void Handler::clearMouseValue()
 {
-    setMouseValue(MouseEvent::CPNT_AXIS_X, 0);
-    setMouseValue(MouseEvent::CPNT_AXIS_Y, 0);
-    setMouseValue(MouseEvent::CPNT_AXIS_Z, 0);
+    if (mMouseRelativeUpdatedX) { mMouseLastRelativeX = 0; setMouseValue(MouseEvent::CPNT_AXIS_X, 0); }
+    if (mMouseRelativeUpdatedY) { mMouseLastRelativeY = 0; setMouseValue(MouseEvent::CPNT_AXIS_Y, 0); }
+    if (mMouseRelativeUpdatedZ) { mMouseLastRelativeZ = 0; setMouseValue(MouseEvent::CPNT_AXIS_Z, 0); }
+
+    mMouseRelativeUpdatedX = mMouseRelativeUpdatedY = mMouseRelativeUpdatedZ = false;
 }
 
 
@@ -582,9 +588,39 @@ bool Handler::mouseMoved(const OIS::MouseEvent& evt)
     float y = evt.state.Y.rel * mConfig.mouseSensivityAxisY;
     float z = evt.state.Z.rel * mConfig.mouseSensivityAxisZ;
 
-    setMouseValue(MouseEvent::CPNT_AXIS_X, x);
-    setMouseValue(MouseEvent::CPNT_AXIS_Y, y);
-    setMouseValue(MouseEvent::CPNT_AXIS_Z, z);
+    if (x != mMouseLastRelativeX)
+    {
+        mMouseRelativeUpdatedX = true;
+        setMouseValue(MouseEvent::CPNT_AXIS_X, x);
+    }
+    else
+    {
+        mMouseRelativeUpdatedX = false;
+    }
+
+    if (y != mMouseLastRelativeY)
+    {
+        mMouseRelativeUpdatedY = true;
+        setMouseValue(MouseEvent::CPNT_AXIS_Y, y);
+    }
+    else
+    {
+        mMouseRelativeUpdatedY = false;
+    }
+
+    if (z != mMouseLastRelativeZ)
+    {
+        mMouseRelativeUpdatedZ = true;
+        setMouseValue(MouseEvent::CPNT_AXIS_Z, z);
+    }
+    else
+    {
+        mMouseRelativeUpdatedZ = false;
+    }
+
+    mMouseLastRelativeX = x;
+    mMouseLastRelativeY = y;
+    mMouseLastRelativeZ = z;
 
     for (auto lnr : mMouseListeners) lnr->mouseMoved(evt);
     return true;

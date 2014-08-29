@@ -280,7 +280,7 @@ SimpleSerializer::SimpleSerializer(const std::string& path)
     mKeyNames["slash"] = OIS::KC_SLASH;
     mKeyNames["rshift"] = OIS::KC_RSHIFT;
     mKeyNames["multiply"] = OIS::KC_MULTIPLY;
-    mKeyNames["lmenu"] = OIS::KC_LMENU;
+    mKeyNames["lalt"] = OIS::KC_LMENU;
     mKeyNames["space"] = OIS::KC_SPACE;
     mKeyNames["capital"] = OIS::KC_CAPITAL;
     mKeyNames["f1"] = OIS::KC_F1;
@@ -343,7 +343,7 @@ SimpleSerializer::SimpleSerializer(const std::string& path)
 
     mKeyNames["divide"] = OIS::KC_DIVIDE;
     mKeyNames["sysrq"] = OIS::KC_SYSRQ;
-    mKeyNames["rmenu"] = OIS::KC_RMENU;
+    mKeyNames["ralt"] = OIS::KC_RMENU;
     mKeyNames["pause"] = OIS::KC_PAUSE;
     mKeyNames["home"] = OIS::KC_HOME;
     mKeyNames["up"] = OIS::KC_UP;
@@ -432,7 +432,7 @@ void SimpleSerializer::loadBinding(NamedBindingMap& map)
 
 void SimpleSerializer::addKey(Bind* b, File& fr) const
 {
-    // Multiple combination can be separated by a space
+    // A space to delimit multiple combination
     std::string word;
     while (fr.nextWord(word))
     {
@@ -440,8 +440,7 @@ void SimpleSerializer::addKey(Bind* b, File& fr) const
         unsigned key = 0;
         bool rev = false;
 
-        // Modifier are setted with a plus sign
-        // example: shift+left
+        // Separator for key combination
         std::vector<std::string> splits;
         split_word('+', word, splits);
 
@@ -474,7 +473,7 @@ void SimpleSerializer::addKey(Bind* b, File& fr) const
 
 void SimpleSerializer::addMouse(Bind* b, File& f) const
 {
-    // Multiple combination can be separated by a space
+    // A space to delimit multiple combination
     std::string word;
     while (f.nextWord(word))
     {
@@ -495,6 +494,7 @@ void SimpleSerializer::addMouse(Bind* b, File& f) const
 void SimpleSerializer::addJoyStick(Bind* b, File& f) const
 {
     // Only one binding per line
+    // Format: [joystick number] [component] [component id]
 
     int joystickNum;
     if (!f.nextNumber(joystickNum))
